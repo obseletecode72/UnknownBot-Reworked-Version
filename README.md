@@ -1,8 +1,8 @@
 # UnknownBot - Versão Reformulada
 
-!Banner do Projeto
+![Banner do Projeto][https://imgur.com/a/MX2ulPM]
 
-Este é um projeto brasileiro para o jogo Minecraft. É uma ferramenta para controlar bots com várias funcionalidades. Este projeto é baseado no antigo bot brasileiro AdvancedBot.
+Este é um projeto brasileiro para o jogo Minecraft. É uma ferramenta para controlar bots com várias funcionalidades. Este projeto é insipirado no antigo bot brasileiro AdvancedBot.
 
 ## Recursos
 
