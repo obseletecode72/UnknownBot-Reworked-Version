@@ -5,256 +5,238 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
   <!-- Import Roboto Light from Google Fonts -->
   <style>
-    /* Oculta a barra de rolagem para Chrome, Safari e Opera */
-    ::-webkit-scrollbar {
-      display: none;
-    }
+/* width */
 
-    .chat {
-      height: 250px;
-      /* Ajuste este valor conforme necessário */
-      overflow-y: auto;
-      background-color: #333;
-      /* Defina para qualquer cor escura que você preferir */
-    }
+::-webkit-scrollbar {
+  width: 0.75rem;
+}
 
-    /* Oculta a barra de rolagem para IE, Edge e Firefox */
-    html {
-      scrollbar-width: none;
-      /* IE and Edge */
-      -ms-overflow-style: none;
-      /* Internet Explorer 10+ */
-    }
+/* Track */
 
-    body {
-      display: flex;
-      min-height: 100vh;
-      flex-direction: column;
-      --tw-bg-opacity: 1;
-      background-color: rgb(24 24 27 / var(--tw-bg-opacity));
-      padding: 1.25rem;
-      --tw-text-opacity: 1;
-      color: rgb(244 244 245 / var(--tw-text-opacity));
-      font-family: "roboto", sans-serif;
-    }
+::-webkit-scrollbar-track {
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
+}
 
-    body h1 {
-      font-size: 1.875rem;
-      line-height: 2.25rem;
-      font-weight: 700;
-      --tw-text-opacity: 1;
-      color: rgb(168 85 247 / var(--tw-text-opacity));
-    }
+/* Handle */
 
-    form {
-      display: flex;
-      flex-direction: column;
-      border-radius: 0.5rem;
-      background-color: rgb(88 28 135 / 0.25);
-      padding: 1.25rem;
-    }
+::-webkit-scrollbar-thumb {
+  --tw-bg-opacity: 1;
+  background-color: rgb(168 85 247 / var(--tw-bg-opacity));
+}
 
-    label {
-      margin-bottom: 0px;
-      font-size: 1rem;
-      line-height: 1.5rem;
-      font-weight: 700;
-    }
+/* Handle on hover */
 
-    input {
-      border-radius: 0.5rem;
-      border-style: none;
-      --tw-bg-opacity: 1;
-      background-color: rgb(39 39 42 / var(--tw-bg-opacity));
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      padding-top: 0.75rem;
-      padding-bottom: 0.75rem;
-      --tw-text-opacity: 1;
-      color: rgb(244 244 245 / var(--tw-text-opacity));
-    }
+::-webkit-scrollbar-thumb:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(147 51 234 / var(--tw-bg-opacity));
+}
 
-    textarea {
-      border-radius: 0.5rem;
-      border-style: none;
-      --tw-bg-opacity: 1;
-      background-color: rgb(39 39 42 / var(--tw-bg-opacity));
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      padding-top: 0.75rem;
-      padding-bottom: 0.75rem;
-      --tw-text-opacity: 1;
-      color: rgb(244 244 245 / var(--tw-text-opacity));
-    }
+body {
+  display: grid;
+  min-height: 100vh;
+  --tw-bg-opacity: 1;
+  background-color: rgb(24 24 27 / var(--tw-bg-opacity));
+  padding: 1.25rem;
+  --tw-text-opacity: 1;
+  color: rgb(244 244 245 / var(--tw-text-opacity));
+  font-family: "roboto", sans-serif;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+}
 
-    .round-checkbox {
-      height: 1.5rem;
-      width: 1.5rem;
-      cursor: pointer;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      border-radius: 9999px;
-      border-style: none;
-      --tw-bg-opacity: 1;
-      background-color: rgb(39 39 42 / var(--tw-bg-opacity));
-    }
+.left {
+  grid-area: 1 / 1 / 2 / 2;
+}
 
-    .round-checkbox:checked {
-      --tw-bg-opacity: 1;
-      background-color: rgb(168 85 247 / var(--tw-bg-opacity));
-    }
+.right {
+  grid-area: 1 / 2 / 2 / 2;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+  padding-top: 4rem;
+}
 
-    #delayDiv {
-      margin-top: 0.75rem;
-    }
+body h1 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  --tw-text-opacity: 1;
+  color: rgb(168 85 247 / var(--tw-text-opacity));
+}
 
-    .aligned-item {
-      display: flex;
-      align-items: center;
-    }
+form {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0px;
+  background-color: rgb(88 28 135 / 0.25);
+  padding: 1.25rem;
+}
 
-    .aligned-item> :not([hidden])~ :not([hidden]) {
-      --tw-space-x-reverse: 0;
-      margin-right: calc(0.5rem * var(--tw-space-x-reverse));
-      margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
-    }
+label {
+  margin-bottom: 0px;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+}
 
-    input[type="submit"] {
-      cursor: pointer;
-      border-radius: 0.5rem;
-      border-style: none;
-      --tw-bg-opacity: 1;
-      background-color: rgb(168 85 247 / var(--tw-bg-opacity));
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      padding-top: 0.75rem;
-      padding-bottom: 0.75rem;
-      --tw-text-opacity: 1;
-      color: rgb(244 244 245 / var(--tw-text-opacity));
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 150ms;
-    }
+input {
+  border-radius: 0px;
+  border-style: none;
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  --tw-text-opacity: 1;
+  color: rgb(244 244 245 / var(--tw-text-opacity));
+}
 
-    input[type="submit"]:hover {
-      --tw-bg-opacity: 1;
-      background-color: rgb(147 51 234 / var(--tw-bg-opacity));
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 150ms;
-    }
+textarea {
+  border-radius: 0px;
+  border-style: none;
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  --tw-text-opacity: 1;
+  color: rgb(244 244 245 / var(--tw-text-opacity));
+}
 
-    #all-bots {
-      display: flex;
-      flex-direction: column;
-    }
+.round-checkbox {
+  height: 1.5rem;
+  width: 1.5rem;
+  cursor: pointer;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  border-radius: 9999px;
+  border-style: none;
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
+}
 
-    .bot-controls {
-      height: 0px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 0.5rem;
-      background-color: rgb(88 28 135 / 0.25);
-      padding: 1.25rem;
-    }
+.round-checkbox:checked {
+  --tw-bg-opacity: 1;
+  background-color: rgb(168 85 247 / var(--tw-bg-opacity));
+}
 
+#delayDiv {
+  margin-top: 0.75rem;
+}
 
-    .bot-controls> :not([hidden])~ :not([hidden]) {
-      --tw-space-x-reverse: 0;
-      margin-right: calc(1rem * var(--tw-space-x-reverse));
-      margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
-      position: relative;
-      left: -30px;
-    }
+.aligned-item {
+  display: flex;
+  align-items: center;
+}
 
-    .bot-controls h3 {
-      font-size: 1.25rem;
-      line-height: 1.75rem;
-      font-weight: 700;
-      position: relative;
-      left: -30px;
-    }
+.aligned-item > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(0.5rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
 
-    .bot-controls button {
-      cursor: pointer;
-      border-radius: 0.5rem;
-      border-style: none;
-      --tw-bg-opacity: 1;
-      background-color: rgb(168 85 247 / var(--tw-bg-opacity));
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      padding-top: 0.75rem;
-      padding-bottom: 0.75rem;
-      --tw-text-opacity: 1;
-      color: rgb(244 244 245 / var(--tw-text-opacity));
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 150ms;
-    }
+input[type="submit"] {
+  cursor: pointer;
+  border-radius: 0px;
+  border-style: none;
+  --tw-bg-opacity: 1;
+  background-color: rgb(168 85 247 / var(--tw-bg-opacity));
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  --tw-text-opacity: 1;
+  color: rgb(244 244 245 / var(--tw-text-opacity));
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
 
-    .bot-controls button:hover {
-      --tw-bg-opacity: 1;
-      background-color: rgb(147 51 234 / var(--tw-bg-opacity));
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 150ms;
-    }
+input[type="submit"]:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(147 51 234 / var(--tw-bg-opacity));
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
 
-    #chat-all {
-      margin-top: 0.75rem;
-      margin-bottom: 0.75rem;
-      display: none;
-    }
+#all-bots {
+  padding: 1.25rem;
+}
 
-    #input-all {
-      margin-top: 0.75rem;
-      margin-bottom: 0.75rem;
-      display: none;
-    }
+#bots {
+  display: flex;
+  height: 24rem;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
 
-    #bots {
-      border-radius: 0.5rem;
-      background-color: rgb(88 28 135 / 0.25);
-      padding: 1.25rem;
-    }
+.bot-controls {
+  display: flex;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 0px;
+  background-color: rgb(88 28 135 / 0.25);
+  padding-left: 1.25rem;
+}
 
-    .bot-div .chat,
-    .bot-div .input {
-      display: none;
-      /* outras propriedades */
-    }
+.bot-controls h3 {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+}
 
-    .chat {
-      border-radius: 5px;
-      /* Ajuste este valor conforme necessário */
-      /* outras propriedades */
-    }
+.bot-controls button {
+  height: 100%;
+  cursor: pointer;
+  border-radius: 0px;
+  border-style: none;
+  --tw-bg-opacity: 1;
+  background-color: rgb(168 85 247 / var(--tw-bg-opacity));
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  --tw-text-opacity: 1;
+  color: rgb(244 244 245 / var(--tw-text-opacity));
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
 
-    select {
-      background-color: #333;
-      /* Ajuste para a cor desejada */
-      border-radius: 0.35rem;
-      /* Ajuste para o raio de borda desejado */
-      border: 1px solid #333;
-      /* Ajuste a cor da borda para a mesma cor do fundo */
-      color: #fff;
-      /* Cor do texto */
-      -webkit-appearance: none;
-      /* Necessário para estilizar selects no Chrome */
-      -moz-appearance: none;
-      /* Necessário para estilizar selects no Firefox */
-      appearance: none;
-    }
+.bot-controls button:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(147 51 234 / var(--tw-bg-opacity));
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+#input-all {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+#chat-all {
+  display: none;
+}
+
+.button-group {
+  height: 100%;
+}
   </style>
 </head>
 
@@ -349,128 +331,136 @@
   </form>
   <h2>All Bots</h2>
   <div id="all-bots">
-    <div class="bot-controls">
-      <h3 id="all-bots-control">All Bots Control</h3>
-      <button id="showchat-all">Show Chat</button>
-      <button id="reconnect-all-button">Reconnect All</button>
-      <button id="remove-all-button">Remove All Bots</button>
+          <div class="bot-controls">
+        <h3 id="all-bots-control">All Bots Control</h3>
+        <div class="button-group">
+        <button id="showchat-all">Show Chat</button>
+        <button id="reconnect-all-button">Reconnect All</button>
+        <button id="remove-all-button">Remove All Bots</button>
+      </div>
+      </div>
+      <div id="chat-all" class="chat"></div>
+      <input type="text" id="input-all" class="input">
     </div>
-    <div id="chat-all" class="chat"></div>
-    <input type="text" id="input-all" class="input">
+    <div id="bots">
+    <h2>Bots</h2>
+    </div>
   </div>
-  <h2>Bots</h2>
-  <div id="bots"></div>
-  <script>
-    const {
-      ipcRenderer
-    } = require('electron')
-    let botsConectadosHTML = [];
-    // Quando recebemos a lista de bots
-    ipcRenderer.on('botsarraytohtml', (event, botsaarray) => {
-      // Agora você tem a lista de bots no arquivo HTML
-      botsConectadosHTML = botsaarray;
-    })
-    // array = bot1 -> username | health, bot2 -> username | health
-    function sendData() {
-      const autoReconnect = document.getElementById('autoReconnect').checked;
-      let delay = document.getElementById('delay').value || 0;
-      const data = {
-        autoReconnect,
-        delay
-      };
-      ipcRenderer.send('form-data-changed', data);
-    }
-
-    function validateInput(input) {
-      if (input.value > 10000) {
-        input.value = 10000;
-      }
-      // Remove caracteres especiais
-      input.value = input.value.replace(/[^0-9]/g, '');
-    }
-    document.getElementById('autoReconnect').addEventListener('change', function () {
-      document.getElementById('delayDiv').style.display = this.checked ? 'flex' : 'none';
-    });
-
-    function toggleDelayInput() {
-      var checkBox = document.getElementById("autoReconnect");
-      var delayDiv = document.getElementById("delayDiv");
-      if (checkBox.checked == true) {
-        delayDiv.style.display = "flex";
-      } else {
-        delayDiv.style.display = "none";
-      }
-    }
-    let botMessages = {}
-    let botVersions = {}
-    let botUsernames = {}
-    let botProxies = {}
-    let botProxyTypes = {}
-    document.getElementById('connect-form').addEventListener('submit', (e) => {
-      e.preventDefault()
-      const host = document.getElementById('host').value
-      const usernames = document.getElementById('usernames').value.split('\n').filter(username => username)
-      const version = document.getElementById('version').value
-      const proxies = document.getElementById('proxies').value.split('\n').map(proxy => {
-        const [ip, port, user, password] = proxy.split(':')
-        return ip && port ? {
-          ip,
-          port: parseInt(port),
-          user,
-          password
-        } : null
+    <script>
+      const {
+        ipcRenderer
+      } = require('electron')
+      let botsConectadosHTML = [];
+      // Quando recebemos a lista de bots
+      ipcRenderer.on('botsarraytohtml', (event, botsaarray) => {
+        // Agora você tem a lista de bots no arquivo HTML
+        botsConectadosHTML = botsaarray;
       })
-      const proxyType = document.getElementById('socks4').checked ? '4' : '5';
-      usernames.forEach((username, index) => {
-        botVersions[username] = version
-        botUsernames[username] = username
-        botProxies[username] = proxies[index]
-        botProxyTypes[username] = proxyType
-        ipcRenderer.send('connect-bot', {
-          host,
-          username,
-          version,
-          proxy: proxies[index],
-          proxyType
+      // array = bot1 -> username | health, bot2 -> username | health
+      function sendData() {
+        const autoReconnect = document.getElementById('autoReconnect').checked;
+        let delay = document.getElementById('delay').value || 0;
+        const data = {
+          autoReconnect,
+          delay
+        };
+        ipcRenderer.send('form-data-changed', data);
+      }
+
+      function validateInput(input) {
+        if (input.value > 10000) {
+          input.value = 10000;
+        }
+        // Remove caracteres especiais
+        input.value = input.value.replace(/[^0-9]/g, '');
+      }
+      document.getElementById('autoReconnect').addEventListener('change', function() {
+        document.getElementById('delayDiv').style.display = this.checked ? 'flex' : 'none';
+      });
+
+      function toggleDelayInput() {
+        var checkBox = document.getElementById("autoReconnect");
+        var delayDiv = document.getElementById("delayDiv");
+        if (checkBox.checked == true) {
+          delayDiv.style.display = "flex";
+        } else {
+          delayDiv.style.display = "none";
+        }
+      }
+      let botMessages = {}
+      let botVersions = {}
+      let botUsernames = {}
+      let botProxies = {}
+      let botProxyTypes = {}
+      document.getElementById('connect-form').addEventListener('submit', (e) => {
+        e.preventDefault()
+        const host = document.getElementById('host').value
+        const usernames = document.getElementById('usernames').value.split('\n').filter(username => username)
+        const version = document.getElementById('version').value
+        const proxies = document.getElementById('proxies').value.split('\n').map(proxy => {
+          const [ip, port, user, password] = proxy.split(':')
+          return ip && port ? {
+            ip,
+            port: parseInt(port),
+            user,
+            password
+          } : null
+        })
+        const proxyType = document.getElementById('socks4').checked ? '4' : '5';
+        usernames.forEach((username, index) => {
+          botVersions[username] = version
+          botUsernames[username] = username
+          botProxies[username] = proxies[index]
+          botProxyTypes[username] = proxyType
+          ipcRenderer.send('connect-bot', {
+            host,
+            username,
+            version,
+            proxy: proxies[index],
+            proxyType
+          })
         })
       })
-    })
-    ipcRenderer.on('bot-connecting', (event, botUsername) => {
-      const botDiv = document.getElementById(botUsername)
-      if (!botDiv) {
-        const newBotDiv = document.createElement('div')
-        newBotDiv.id = botUsername
-        newBotDiv.className = 'bot-div'
-        newBotDiv.innerHTML = `
+      ipcRenderer.on('bot-connecting', (event, botUsername) => {
+        const botDiv = document.getElementById(botUsername)
+        if (!botDiv) {
+          const newBotDiv = document.createElement('div')
+          newBotDiv.id = botUsername
+          newBotDiv.className = 'bot-div'
+          newBotDiv.innerHTML = `
 																												<div class="bot-controls">
 																													<h3 id="${botUsername}-status">${botUsername}</h3>
-																													<button id="${botUsername}-showchat">Show Chat</button>
-																													<button id="${botUsername}-reconnect-button">Reconnect</button>
-																													<button id="${botUsername}-remove-button">Remove Bot</button>
-																												</div>
-																												<div id="${botUsername}-chat" class="chat"></div>
-																												<input type="text" id="${botUsername}-input" class="input">`
-        document.getElementById('bots').appendChild(newBotDiv)
-      }
-    })
-    ipcRenderer.on('bot-connected', (event, botUsername) => {
-      const botDiv = document.getElementById(botUsername)
-      if (!botDiv) {
-        const newBotDiv = document.createElement('div')
-        newBotDiv.id = botUsername
-        newBotDiv.className = 'bot-div'
-        newBotDiv.innerHTML = `
-																													<div class="bot-controls">
-																														<h3 id="${botUsername}-status">${botUsername}</h3>
+                                                            <div class="button-group">
 																														<button id="${botUsername}-showchat">Show Chat</button>
 																														<button id="${botUsername}-reconnect-button">Reconnect</button>
 																														<button id="${botUsername}-remove-button">Remove Bot</button>
+                                                            </div>
+																												</div>
+																												<div id="${botUsername}-chat" class="chat"></div>
+																												<input type="text" id="${botUsername}-input" class="input">`
+          document.getElementById('bots').appendChild(newBotDiv)
+        }
+      })
+      ipcRenderer.on('bot-connected', (event, botUsername) => {
+        const botDiv = document.getElementById(botUsername)
+        if (!botDiv) {
+          const newBotDiv = document.createElement('div')
+          newBotDiv.id = botUsername
+          newBotDiv.className = 'bot-div'
+          newBotDiv.innerHTML = `
+																													<div class="bot-controls">
+																														<h3 id="${botUsername}-status">${botUsername}</h3>
+                                                            <div class="button-group">
+																														<button id="${botUsername}-showchat">Show Chat</button>
+																														<button id="${botUsername}-reconnect-button">Reconnect</button>
+																														<button id="${botUsername}-remove-button">Remove Bot</button>
+                                                            </div>
 																													</div>
 																													<div id="${botUsername}-chat" class="chat"></div>
 																													<input type="text" id="${botUsername}-input" class="input">`
-        document.getElementById('bots').appendChild(newBotDiv)
-      }
-    })
+          document.getElementById('bots').appendChild(newBotDiv)
+        }
+      })
     ipcRenderer.on('bot-disconnected', (event, botUsername) => {
       delete botMessages[botUsername]
       delete botVersions[botUsername]
