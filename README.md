@@ -29,4 +29,4 @@ Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgq
 
 ## Para que serve o arquivo digging.js?
 
-Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e uma versao melhorada para o uso de quebrar blocos pois contem bugs igual eu disse, para instalar isso voce pode substituir o arquivo em ´node_modules\mineflayer\lib\plugins´ apos ter instalado todas as dependencias do projeto
+Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e uma versao melhorada para o uso de quebrar blocos pois contem bugs igual eu disse, para instalar isso voce pode substituir o arquivo em ´node_modules\mineflayer\lib\plugins´
