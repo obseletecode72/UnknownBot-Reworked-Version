@@ -22,5 +22,7 @@ Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgq
 ## Como instalar?
 
 1- Instale o Node JS mais recente por aqui https://nodejs.org/en
+
 2- Apos extrair a pasta para a sua area de trabalho use, abra um cmd na mesma pasta e use ´npm install´, isso ira instalar todas dependencias do projeto baseado no ´package.json´
+
 3- Use electron minefaa.js, e pronto voce podera usar o bot :)
