@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+  <!-- Import Roboto Light from Google Fonts -->
+  <style>
+    /* Oculta a barra de rolagem para Chrome, Safari e Opera */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Oculta a barra de rolagem para IE, Edge e Firefox */
+    html {
+      scrollbar-width: none;
+      /* IE and Edge */
+      -ms-overflow-style: none;
+      /* Internet Explorer 10+ */
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      /* Use Roboto Light */
+      background-color: #000;
+      color: #fff;
+    }
+
+    h1,
+    h2 {
+      color: #800080;
+      /* Purple */
+    }
+
+    form,
+    div {
+      background-color: #800080;
+      /* Purple */
+      border-radius: 10px;
+      padding: 2px;
+      /* Ajuste este valor conforme necessário */
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    input[type="submit"],
+    button,
+    input[type="text"] {
+      background-color: #000;
+      /* Black */
+      color: #fff;
+      border-radius: 10px;
+      border: none;
+      padding: 8px 15px;
+      cursor: pointer;
+      /* Add a pointer cursor on hover */
+      margin-top: 10px;
+      /* Add space on top */
+    }
+
+    input[type="submit"]:hover,
+    button:hover {
+      background-color: #800080;
+      /* Change color on hover */
+    }
+
+    .chat {
+      width: 500px;
+      height: 300px;
+      border: 1px solid #800080;
+      /* Purple */
+      overflow-y: scroll;
+      background-color: #000;
+      /* Black */
+      color: #fff;
+      padding: 10px;
+      display: none;
+      border-radius: 15px;
+      scrollbar-width: none;
+      /* Hide scrollbar for Firefox */
+    }
+
+    .chat::-webkit-scrollbar {
+      display: none;
+      /* Hide scrollbar for Chrome, Safari and Opera */
+    }
+
+    .chat p {
+      margin: 0;
+    }
+
+    .input {
+      display: none;
+    }
+
+    .bot-controls {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0px;
+      /* Ajuste este valor conforme necessário */
+    }
+
+    .round-checkbox {
+      width: 16px;
+      height: 16px;
+      background-color: #fff;
+      border-radius: 50%;
+      vertical-align: middle;
+      border: 1px solid #ddd;
+      -webkit-appearance: none;
+      /* ignore that problem here lol */
+      outline: none;
+    }
+
+    .round-checkbox:checked {
+      background-color: #4B0082;
+      /* Cor roxa escura */
+    }
+
+    .aligned-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .delay-label {
+      margin-left: 4px;
+    }
+
+    .delay-input {
+      position: relative;
+      top: 1px;
+      vertical-align: middle;
+      background-color: black;
+      color: white;
+      border-radius: 10px;
+      border: 2px solid black;
+      -webkit-appearance: none;
+      /* Remove o controle de incremento */
+      appearance: none;
+      /* Remove o controle de incremento */
+    }
+
+    /* Oculta o controle de incremento no Chrome, Safari e outros navegadores baseados no WebKit */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>UnknownBot Reworked Version</h1>
+  <form id="connect-form">
+    <label for="host">Host:</label><br>
+    <input type="text" id="host" value="localhost" name="host"><br><br>
+    <label for="usernames">Usernames: <span id="usernameCount"></span></label><br>
+    <textarea id="usernames" name="usernames" rows="4" cols="50"
+      style="background-color: black; color: white; resize: none; border-radius: 10px; border: 1px solid black;"></textarea><br><br>
+    <label for="version">Version:</label><br>
+    <input type="text" id="version" value="1.8.8" name="version"><br><br>
+    <label for="proxies">Proxies: <span id="proxyCount"></span></label><br>
+    <textarea id="proxies" name="proxies" rows="4" cols="50"
+      style="background-color: black; color: white; resize: none; border-radius: 10px; border: 1px solid black;"></textarea><br><br>
+    <input type="radio" id="socks4" name="proxyType" value="socks4" class="round-checkbox">
+    <label for="socks4">Socks4</label><br>
+    <input type="radio" id="socks5" name="proxyType" value="socks5" class="round-checkbox">
+    <label for="socks5">Socks5</label><br><br>
+    <div class="aligned-item">
+      <input type="checkbox" id="autoReconnect" name="autoReconnect" class="round-checkbox" onchange="sendData()">
+      <label for="autoReconnect">Auto Reconnect</label>
+    </div>
+    <div class="aligned-item" id="delayDiv" style="display: none;">
+      <label for="delay" class="delay-label">Delay(MS):</label>
+      <input type="number" id="delay" name="delay" class="delay-input" min="0" max="10000" value="0"
+        onchange="sendData()" oninput="validateInput(this)">
+    </div><br>
+    <input type="submit" value="Connect">
+  </form>
+
+  <h2>All Bots</h2>
+  <div id="all-bots">
+    <div class="bot-controls">
+      <h3 id="all-bots-control" style="margin-right: 10px;">All Bots Control</h3>
+      <button id="showchat-all">Show Chat</button>
+      <button id="reconnect-all-button">Reconnect All</button>
+      <button id="remove-all-button">Remove All Bots</button>
+    </div>
+    <div id="chat-all" class="chat"></div>
+    <input type="text" id="input-all" class="input">
+  </div>
+
+  <h2>Bots</h2>
+  <div id="bots"></div>
+
+  <script>
+    const { ipcRenderer } = require('electron')
+
+    let botsConectadosHTML = [];
+    // Quando recebemos a lista de bots
+    ipcRenderer.on('botsarraytohtml', (event, botsaarray) => {
+      // Agora você tem a lista de bots no arquivo HTML
+      botsConectadosHTML = botsaarray;
+    })
+
+    // array = bot1 -> username | health, bot2 -> username | health
+
+    function sendData() {
+      const autoReconnect = document.getElementById('autoReconnect').checked;
+      let delay = document.getElementById('delay').value || 0;
+
+      const data = { autoReconnect, delay };
+
+      ipcRenderer.send('form-data-changed', data);
+    }
+
+    function validateInput(input) {
+      if (input.value > 10000) {
+        input.value = 10000;
+      }
+      // Remove caracteres especiais
+      input.value = input.value.replace(/[^0-9]/g, '');
+    }
+
+
+    document.getElementById('autoReconnect').addEventListener('change', function () {
+      document.getElementById('delayDiv').style.display = this.checked ? 'flex' : 'none';
+    });
+
+    function toggleDelayInput() {
+      var checkBox = document.getElementById("autoReconnect");
+      var delayDiv = document.getElementById("delayDiv");
+      if (checkBox.checked == true) {
+        delayDiv.style.display = "flex";
+      } else {
+        delayDiv.style.display = "none";
+      }
+    }
+
+    let botMessages = {}
+    let botVersions = {}
+    let botUsernames = {}
+    let botProxies = {}
+    let botProxyTypes = {}
+
+    document.getElementById('connect-form').addEventListener('submit', (e) => {
+      e.preventDefault()
+      const host = document.getElementById('host').value
+      const usernames = document.getElementById('usernames').value.split('\n').filter(username => username)
+      const version = document.getElementById('version').value
+      const proxies = document.getElementById('proxies').value.split('\n').map(proxy => {
+        const [ip, port, user, password] = proxy.split(':')
+        return ip && port ? { ip, port: parseInt(port), user, password } : null
+      })
+      const proxyType = document.getElementById('socks4').checked ? '4' : '5';
+      usernames.forEach((username, index) => {
+        botVersions[username] = version
+        botUsernames[username] = username
+        botProxies[username] = proxies[index]
+        botProxyTypes[username] = proxyType
+        ipcRenderer.send('connect-bot', { host, username, version, proxy: proxies[index], proxyType })
+      })
+    })
+
+
+    ipcRenderer.on('bot-connecting', (event, botUsername) => {
+      const botDiv = document.getElementById(botUsername)
+      if (!botDiv) {
+        const newBotDiv = document.createElement('div')
+        newBotDiv.id = botUsername
+        newBotDiv.className = 'bot-div'
+        newBotDiv.innerHTML = `<div class="bot-controls"><h3 id="${botUsername}-status">${botUsername}</h3> <button id="${botUsername}-showchat">Show Chat</button> <button id="${botUsername}-reconnect-button">Reconnect</button><button id="${botUsername}-remove-button">Remove Bot</button></div><div id="${botUsername}-chat" class="chat"></div><input type="text" id="${botUsername}-input" class="input">`
+        document.getElementById('bots').appendChild(newBotDiv)
+      }
+    })
+
+    ipcRenderer.on('bot-connected', (event, botUsername) => {
+      const botDiv = document.getElementById(botUsername)
+      if (!botDiv) {
+        const newBotDiv = document.createElement('div')
+        newBotDiv.id = botUsername
+        newBotDiv.className = 'bot-div'
+        newBotDiv.innerHTML = `<div class="bot-controls"><h3 id="${botUsername}-status">${botUsername}</h3> <button id="${botUsername}-showchat">Show Chat</button> <button id="${botUsername}-reconnect-button">Reconnect</button><button id="${botUsername}-remove-button">Remove Bot</button></div><div id="${botUsername}-chat" class="chat"></div><input type="text" id="${botUsername}-input" class="input">`
+        document.getElementById('bots').appendChild(newBotDiv)
+      }
+    })
+
+    ipcRenderer.on('bot-disconnected', (event, botUsername) => {
+      delete botMessages[botUsername]
+      delete botVersions[botUsername]
+      delete botUsernames[botUsername]
+      delete botProxies[botUsername]
+      delete botProxyTypes[botUsername]
+    })
+
+    ipcRenderer.on('update-bot-status', (event, { bot, status }) => {
+      const botStatusElement = document.getElementById(`${bot}-status`)
+      if (status === 'connected') {
+        botStatusElement.innerHTML = `${bot} ✔️`
+      } else if (status === 'disconnected') {
+        botStatusElement.innerHTML = `${bot} ❌`
+      } else if (status === 'connecting') {
+        botStatusElement.innerHTML = `${bot} ⌛`
+      }
+    })
+
+    ipcRenderer.on('bot-message', (event, { bot, message }) => {
+      const chatDiv = document.getElementById(`${bot}-chat`);
+      if (chatDiv) {
+        // Adicionando a mensagem ao chat
+        chatDiv.insertAdjacentHTML('beforeend', message);
+        // Adicionando uma quebra de linha após cada mensagem
+        chatDiv.appendChild(document.createElement('br'));
+      }
+    });
+
+    ipcRenderer.on('bot-message-all', (event, { message }) => {
+      //ipcRenderer.send('log', message); // Envia botUsername para o processo de // log
+      const chatDivAll = document.getElementById(`chat-all`)
+      if (chatDivAll) {
+        // Adicionando a mensagem ao chat
+        chatDivAll.insertAdjacentHTML('beforeend', message);
+        // Adicionando uma quebra de linha após cada mensagem
+        chatDivAll.appendChild(document.createElement('br'));
+      }
+    });
+
+    // Função para executar o comando quando a mensagem é clicada
+    function executeCommand(botUsername, command) {
+      if (command) {
+        ipcRenderer.send('messagewasclicable', botUsername, command)
+      }
+    }
+
+    document.addEventListener('click', (event) => {
+      if (event.target.id.endsWith('-showchat')) {
+        const botUsername = event.target.id.split('-')[0]
+        const chatDiv = document.getElementById(`${botUsername}-chat`)
+        const inputDiv = document.getElementById(`${botUsername}-input`)
+        if (chatDiv && inputDiv) {
+          const display = chatDiv.style.display === 'none' ? 'block' : 'none'
+          chatDiv.style.display = display
+          inputDiv.style.display = display
+        }
+      }
+      else if (event.target.id.endsWith('-remove-button')) {
+        const botUsername = event.target.id.replace('-remove-button', '')
+        const botDiv = document.getElementById(botUsername)
+        if (botDiv) {
+          botDiv.remove()
+        }
+        delete botMessages[botUsername]
+        delete botVersions[botUsername]
+        delete botUsernames[botUsername]
+        delete botProxies[botUsername]
+        delete botProxyTypes[botUsername]
+        ipcRenderer.send('remove-bot', botUsername)
+      }
+      else if (event.target.id.endsWith('-reconnect-button')) {
+        const botUsername = event.target.id.replace('-reconnect-button', '')
+        const host = document.getElementById('host').value
+        const version = botVersions[botUsername]
+        const username = botUsernames[botUsername]
+        const proxy = botProxies[botUsername]
+        const proxyType = botProxyTypes[botUsername]
+        ipcRenderer.send('reco-bot', host, botUsername, version, username, proxy, proxyType)
+      }
+      else if (event.target.id === 'showchat-all') {
+        const chatDivAll = document.getElementById(`chat-all`)
+        const inputDivAll = document.getElementById(`input-all`)
+        if (chatDivAll && inputDivAll) {
+          const display = chatDivAll.style.display === 'none' ? 'block' : 'none'
+          chatDivAll.style.display = display
+          inputDivAll.style.display = display
+        }
+      }
+      else if (event.target.id === 'remove-all-button') {
+        // Remover todos os bots
+
+        // Obtenha todos os elementos div com a classe 'bot-div'
+        let botDivs = document.querySelectorAll('.bot-div');
+
+        // Crie uma lista de nomes de bots a partir dos IDs dos divs
+        let botNames = Array.from(botDivs).map(div => div.id);
+
+        botNames.forEach(botUsername => {
+          const botDiv = document.getElementById(botUsername)
+          if (botDiv) {
+            botDiv.remove()
+          }
+          delete botMessages[botUsername]
+          delete botVersions[botUsername]
+          delete botUsernames[botUsername]
+          delete botProxies[botUsername]
+          delete botProxyTypes[botUsername]
+          ipcRenderer.send('remove-bot', botUsername)
+        })
+      }
+      else if (event.target.id === 'reconnect-all-button') {
+        // Reconectar todos os bots
+        const host = document.getElementById('host').value
+
+        // Obtenha todos os elementos div com a classe 'bot-div'
+        let botDivs = document.querySelectorAll('.bot-div');
+
+        // Crie uma lista de nomes de bots a partir dos IDs dos divs
+        let botNames = Array.from(botDivs).map(div => div.id);
+
+        //ipcRenderer.send('log', JSON.stringify(botNames)); // Envia botUsername para o processo de log
+        botNames.forEach(botUsername => {
+          const version = botVersions[botUsername]
+          const username = botUsername // Use botUsername diretamente
+          const proxy = botProxies[botUsername]
+          const proxyType = botProxyTypes[botUsername]
+          ipcRenderer.send('reco-bot', host, botUsername, version, username, proxy, proxyType)
+        })
+      };
+    })
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        if (event.target.id === 'input-all') {
+          ipcRenderer.send('ready-for-bots')
+          event.preventDefault()
+          const message = event.target.value
+
+          if (message == "$inventoryinterface") {
+            ipcRenderer.send('send-message-all', { message: "<br/><span style='color:red'>Comando nao suportado neste canal!</span><br><br/>" })
+            event.target.value = ''
+          }
+          else {
+            // Enviar a mesma mensagem para todos os bots
+            botsConectadosHTML.forEach(botUsername => {
+              //ipcRenderer.send('log', botUsername); // Envia botUsername para o processo de // log
+              ipcRenderer.send('send-message', { botUsername, message });
+            });
+            event.target.value = ''
+          }
+        }
+      }
+    })
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && event.target.className === 'input') {
+        event.preventDefault()
+        const botUsername = event.target.id.split('-')[0]
+        const botStatusElement = document.getElementById(`${botUsername}-status`)
+        if (botStatusElement.innerHTML.includes('❌')) {
+          // Se o bot estiver desconectado, não permita que o usuário envie mensagens
+          return
+        }
+        const message = event.target.value
+        ipcRenderer.send('send-message', { botUsername, message })
+        event.target.value = ''
+      }
+      else if (event.key === 'Enter' && event.target.id === 'input-all') {
+        ipcRenderer.send('ready-for-bots')
+        event.preventDefault()
+        const message = event.target.value
+        // Enviar a mesma mensagem para todos os bots
+        botsConectadosHTML.forEach(botUsername => {
+          ipcRenderer.send('send-message', { botUsername, message });
+        });
+        event.target.value = ''
+      }
+      else if (event.ctrlKey && event.shiftKey && event.key === 'G') {
+        let textarea = document.getElementById('usernames');
+        for (let i = 0; i < 5; i++) {
+          textarea.value += generateRandomString(15) + '\n';
+        }
+        updateUsernameCount();
+      }
+
+    })
+
+    document.getElementById('usernames').addEventListener('input', updateUsernameCount);
+    document.getElementById('proxies').addEventListener('input', updateProxyCount);
+
+    function generateRandomString(length) {
+      let result = '';
+      let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return result;
+    }
+
+    function updateUsernameCount() {
+      let textarea = document.getElementById('usernames');
+      let usernames = textarea.value.split('\n');
+      let count = 0;
+      for (let i = 0; i < usernames.length; i++) {
+        if (usernames[i] !== '') {
+          count++;
+        }
+      }
+      document.getElementById('usernameCount').textContent = count;
+    }
+
+    function updateProxyCount() {
+      let textarea = document.getElementById('proxies');
+      let usernames = textarea.value.split('\n');
+      let count = 0;
+      for (let i = 0; i < usernames.length; i++) {
+        if (usernames[i] !== '') {
+          count++;
+        }
+      }
+      document.getElementById('proxyCount').textContent = count;
+    }
+
+  </script>
+</body>
+
+</html>
