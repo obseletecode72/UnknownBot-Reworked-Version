@@ -12,6 +12,56 @@ var Socks = require('socks').SocksClient;
 const inventoryViewer = require('mineflayer-web-inventory')
 const PNGImage = require('pngjs-image');
 const net = require('net')
+const fs = require('fs');
+const path = require('path');
+const unidecode = require('unidecode');
+
+let ClickTextDetect = false;
+let textFromFile = '';
+const filePath = path.join(__dirname, 'ClickText.txt');
+if (fs.existsSync(filePath)) {
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error(`Erro ao ler o arquivo: ${err}`);
+      return;
+    }
+
+    // Verifica se a string 'text="' existe no arquivo
+    if (data.includes('text="')) {
+      // Extrai a mensagem após text=
+      textFromFile = data.split('text="')[1].split('"')[0];
+
+      if (textFromFile != "") {
+        // Remove acentos do texto
+        let textWithoutAccents = unidecode(textFromFile);
+
+        console.log("Texto Extraido: " + textWithoutAccents);
+        console.log("Caso tenha acentos o codigo ira remover os acentos para nao causar erros!")
+        ClickTextDetect = true;
+      }
+      else
+      {
+        console.log("Texto vazio");
+      }
+    }
+  });
+}
+
+function processClickEvent(bot, message) {
+  // Verifica se message.json e message.json.extra existem e são do tipo correto
+  if (message && message.json && Array.isArray(message.json.extra)) {
+    // Verifica as mensagens que estão vindo de acordo com o evento message
+    message.json.extra.forEach((extra) => {
+      if (extra && extra.clickEvent) {
+        // Se o text="" for o mesmo da que tiver o clickevent, rodar o comando que foi extraido dela
+        if (unidecode(extra.text) === unidecode(textFromFile)) {
+          bot.chat(extra.clickEvent.value);
+          mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
+        }
+      }
+    });
+  }
+}
 
 let janelasCaptcha = {};
 let captchaImages = {};
@@ -891,10 +941,14 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
       console.log('Enviado:', 'packet', data);
     }); 
   */
-
   bot.on('message', (message) => {
     let fullMessage = processMessage(message);
     mainWindow.webContents.send('bot-message', { bot: bot.username, message: fullMessage });
+
+    // Chama a função processClickEvent com a mensagem
+    if (ClickTextDetect) {
+      processClickEvent(bot, message);
+    }
   });
 
   bot.on('title', (title) => {
@@ -923,17 +977,6 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   bots[bot.username] = bot
   botsa = bot
 })
-
-ipcMain.on('messagewasclicable', (event, botUsername, command) => {
-  const botsaarrayCopy = [...botsaarray]; // Create a copy of botsaarray
-  botsaarrayCopy.forEach((bot) => {
-    if (bot.username == botUsername) {
-      console.log("Extracted Command: " + command)
-      bot.chat(command);
-      mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
-    }
-  })
-});
 
 ipcMain.on('captcha-input-janela1', (event, botUsername, captchaInput) => {
   const botsaarrayCopy = [...botsaarray]; // Create a copy of botsaarray
@@ -1213,7 +1256,7 @@ async function minerar2(bot, x1, y1, z1, x2, y2, z2) {
 
 ipcMain.on('send-message', async (event, { botUsername, message }) => {
 
-  let listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
+  let listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$listslots", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
   const Syntax = `
   <span style="color:yellow">Lista de comandos existentes:</span><br/>
   <span style="color:white">- KillAura, Ataca todas entidades ao redor:</span> <span style="color:orange">$killaura</span><br/>
@@ -1223,12 +1266,13 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
   <span style="color:white">- Pesca, Pesca automaticamente:</span> <span style="color:orange">$pesca</span><br/>
   <span style="color:white">- Goto, Anda ate as coordenadas fornecidas:</span> <span style="color:orange">$goto [x] [y] [z]</span><br/>
   <span style="color:white">- Shift, Fica agachado:</span> <span style="color:orange">$shift</span><br/>
-  <span style="color:white">- SetHotBarSlot, Seta o slot da sua hotbar para o fornecido:</span> <span style="color:orange">$sethotbarslot [numero]</span><br/>
+  <span style="color:white">- SetHotBarSlot, Seta o slot da sua hotbar para o fornecido (0-8):</span> <span style="color:orange">$sethotbarslot [numero]</span><br/>
+  <span style="color:white">- ListSlots, Mostra quantos slots tem a janela aberta:</span> <span style="color:orange">$listslots</span><br/>
   <span style="color:white">- SetInventorySlot, Seta o slot da janela aberta para o fornecido:</span> <span style="color:orange">$setinventoryslot [numero] [drop]</span><br/>
   <span style="color:white">- DropAll, Dropa todos itens do inventario:</span> <span style="color:orange">$dropall</span><br/>
   <span style="color:white">- InventoryInterface, Mostra seu inventario em outra janela:</span> <span style="color:orange">$inventoryinterface</span><br/>
   <span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem</span><br/>
-  <span style="color:white">- ClickEntity, Clica o botao esquerdo e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
+  <span style="color:white">- ClickEntity, Clica o botao direito e solta na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
   <span style="color:white">- Move, Faz o bot se mover por um tempo determinado. (As direções podem ser combinadas com o caractere "|":</span> <span style="color:orange">$move [direções jump,forward,back,left,right,sneak,sprint] [duração em ticks]
   </span><br/>
 `
@@ -1238,15 +1282,25 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
         if (!listadecommandos.some(cmd => message.toLowerCase().startsWith(cmd.toLowerCase()))) {
           mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Comando Inexistente</span><br><br/>" + Syntax })
         }
-        else if (message.toLowerCase().startsWith("$clickentity")) {
-          const playerFilter = (entity) => !botsConectado.includes(entity.username);
-          const entity = bot.nearestEntity(playerFilter);
-          if (entity) {
-            bot.lookAt(entity.position.offset(0, entity.height, 0));
-            bot.activateEntity(entity);
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Entidade clicada!</span><br/>` })
+        else if (message.toLowerCase() == "$clickentity") {
+          (async () => {
+            const playerFilter = (entity) => !botsConectado.includes(entity.username) && entity.type === 'player';
+            const entity = bot.nearestEntity(playerFilter);
+            if (entity) {
+              await bot.lookAt(entity.position.offset(0, 1, 0));
+              await bot.attack(entity);
+              mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Entidade clicada!</span><br/>` })
+            } else {
+              mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nenhuma entidade proxima para clicar!</span><br/>` })
+            }
+          })();
+        }
+        else if (message.toLowerCase() == "$listslots") {
+          if (bot.currentWindow) {
+            const slots = bot.currentWindow.inventorySlots;
+            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>A janela atual tem ${slots} slots.</span><br/>` })
           } else {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nenhuma entidade proxima para clicar!</span><br/>` })
+            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nenhuma janela está aberta no momento.</span><br/>` })
           }
         }
         else if (message.toLowerCase().startsWith("$sethotbarslot ")) {
@@ -1385,7 +1439,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Pesca desativado</span><br/>" });
           }
         }
-        else if (message.toLowerCase().startsWith("$killAura.timems=")) {
+        else if (message.toLowerCase().startsWith("$killaura.timems=")) {
           killAuraDelay = parseInt(message.split('=')[1]);
 
           if (killAuraDelay <= 0) {
@@ -1394,7 +1448,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
 
           mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Delay do KillAura definido para ${killAuraDelay}ms</span><br/>` })
         }
-        else if (message.toLowerCase().startsWith("$killAura.distance=")) {
+        else if (message.toLowerCase().startsWith("$killaura.distance=")) {
           DistanceReach = parseInt(message.split('=')[1]);
 
           if (DistanceReach <= 0 || DistanceReach > 6 || isNaN(DistanceReach)) {
