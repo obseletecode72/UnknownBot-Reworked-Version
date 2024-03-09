@@ -339,7 +339,7 @@ function sleep(ms) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 600,
+    width: 1200,
     height: 800,
     show: true,
     resizable: false,
