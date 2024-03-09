@@ -1,4 +1,4 @@
-# UnknownBot - Versão Reformulada
+# UnknownBot - Versão Reworked
 
 ![Banner do Projeto][https://imgur.com/a/MX2ulPM]
 
