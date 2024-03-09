@@ -25,4 +25,8 @@ Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgq
 
 2- Apos extrair a pasta para a sua area de trabalho use, abra um cmd na mesma pasta e use ´npm install´, isso ira instalar todas dependencias do projeto baseado no ´package.json´
 
-3- Use electron minefaa.js, e pronto voce podera usar o bot :)
+3- Use electron minefaa.js, e pronto voce podera usar o bot
+
+## Para que serve o arquivo digging.js?
+
+Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e uma versao melhorada para o uso de quebrar blocos pois contem bugs igual eu disse, para instalar isso voce pode substituir o arquivo em ´node_modules\mineflayer\lib\plugins´ apos ter instalado todas as dependencias do projeto
