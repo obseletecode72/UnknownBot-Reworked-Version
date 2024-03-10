@@ -1,0 +1,111 @@
+/* width */
+::-webkit-scrollbar {
+    @apply w-3;
+}
+
+  /* Track */
+  ::-webkit-scrollbar-track {
+    @apply bg-zinc-800;
+  }
+   
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    @apply bg-purple-500;
+  }
+  
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-purple-600;
+  }
+
+body {
+  @apply bg-zinc-900 min-h-screen text-zinc-100 p-5 grid;
+  font-family: "roboto", sans-serif;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+}
+
+.left { grid-area: 1 / 1 / 2 / 2; }
+.right { grid-area: 1 / 2 / 2 / 2; @apply pt-16 px-10;}
+
+body h1 {
+  @apply text-3xl font-bold text-purple-500;
+}
+
+form {
+  @apply flex flex-col bg-purple-900/25 p-5 rounded-none;
+}
+
+label {
+  @apply text-base font-bold mb-0;
+}
+
+input {
+  @apply bg-zinc-800 text-zinc-100 rounded-none px-2 py-3 border-none;
+}
+
+textarea {
+  @apply bg-zinc-800 text-zinc-100 rounded-none px-2 py-3 border-none;
+}
+
+.round-checkbox {
+  @apply appearance-none bg-zinc-800 border-none w-6 h-6 rounded-full cursor-pointer;
+}
+
+.round-checkbox:checked {
+  @apply bg-purple-500;
+}
+
+#delayDiv {
+    @apply mt-3;
+}
+
+.aligned-item {
+   @apply flex items-center space-x-2;
+}
+
+input[type="submit"] {
+  @apply bg-purple-500 text-zinc-100 rounded-none px-2 py-3 border-none cursor-pointer transition;
+}
+
+input[type="submit"]:hover {
+  @apply bg-purple-600 transition;
+}
+
+#all-bots {
+  @apply p-5;
+}
+
+#bots {
+  @apply flex flex-col h-96 p-5 overflow-y-auto;
+}
+
+.bot-controls {
+  @apply flex justify-between items-center bg-purple-900/25 rounded-none pl-5 h-10;
+}
+
+.bot-controls h3 {
+    @apply text-sm font-bold;
+}
+
+.bot-controls button {
+  @apply bg-purple-500 text-zinc-100 h-full px-2 border-none rounded-none cursor-pointer transition;
+}
+
+.bot-controls button:hover {
+  @apply bg-purple-600 transition;
+}
+
+#input-all {
+  @apply my-3;
+}
+
+#chat-all {
+  @apply hidden;
+}
+
+.button-group {
+  @apply h-full;
+}

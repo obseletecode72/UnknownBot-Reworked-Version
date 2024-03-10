@@ -4,13 +4,17 @@
     "atob": "^2.1.2",
     "dns": "^0.2.2",
     "electron": "^29.1.1",
+    "electron-reload": "^2.0.0-alpha.1",
+    "fs": "^0.0.1-security",
     "mineflayer": "^4.20.0",
     "mineflayer-pathfinder": "^2.4.5",
     "mineflayer-web-inventory": "^1.8.4",
     "net": "^1.0.2",
+    "path": "^0.12.7",
     "pngjs-image": "^0.11.7",
     "prismarine-chat": "^1.10.0",
     "socks": "^2.8.1",
+    "unidecode": "^0.1.8",
     "util": "^0.12.5",
     "vec3": "^0.1.10"
   }

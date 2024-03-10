@@ -13,6 +13,55 @@ const inventoryViewer = require('mineflayer-web-inventory')
 const PNGImage = require('pngjs-image');
 const net = require('net')
 require('electron-reload')(__dirname)
+const fs = require('fs');
+const path = require('path');
+const unidecode = require('unidecode');
+
+let ClickTextDetect = false;
+let textFromFile = '';
+const filePath = path.join(__dirname, 'ClickText.txt');
+if (fs.existsSync(filePath)) {
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error(`Erro ao ler o arquivo: ${err}`);
+      return;
+    }
+
+    // Verifica se a string 'text="' existe no arquivo
+    if (data.includes('text="')) {
+      // Extrai a mensagem após text=
+      textFromFile = data.split('text="')[1].split('"')[0];
+
+      if (textFromFile != "") {
+        // Remove acentos do texto
+        let textWithoutAccents = unidecode(textFromFile);
+
+        console.log("Texto Extraido: " + textWithoutAccents);
+        console.log("Caso tenha acentos o codigo ira remover os acentos para nao causar erros!")
+        ClickTextDetect = true;
+      }
+      else {
+        console.log("Texto vazio");
+      }
+    }
+  });
+}
+
+function processClickEvent(bot, message) {
+  // Verifica se message.json e message.json.extra existem e são do tipo correto
+  if (message && message.json && Array.isArray(message.json.extra)) {
+    // Verifica as mensagens que estão vindo de acordo com o evento message
+    message.json.extra.forEach((extra) => {
+      if (extra && extra.clickEvent) {
+        // Se o text="" for o mesmo da que tiver o clickevent, rodar o comando que foi extraido dela
+        if (unidecode(extra.text) === unidecode(textFromFile)) {
+          bot.chat(extra.clickEvent.value);
+          mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
+        }
+      }
+    });
+  }
+}
 
 let janelasCaptcha = {};
 let captchaImages = {};
@@ -897,6 +946,11 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   bot.on('message', (message) => {
     let fullMessage = processMessage(message);
     mainWindow.webContents.send('bot-message', { bot: bot.username, message: fullMessage });
+
+    // Chama a função processClickEvent com a mensagem
+    if (ClickTextDetect) {
+      processClickEvent(bot, message);
+    }
   });
 
   bot.on('title', (title) => {
