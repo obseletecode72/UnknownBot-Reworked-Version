@@ -17,6 +17,34 @@ const fs = require('fs');
 const path = require('path');
 const unidecode = require('unidecode');
 
+// killaura part
+var killAuraActive = {}
+let attackInterval = {};
+let killAuraDelay = 1;
+let DistanceReach = 3;
+// killaura part
+
+// pesca part
+var PescaActive = {};
+// pesca part
+
+// goto part
+let isMoving = {};
+// goto part
+
+// sneak part
+var IsSneaking = {};
+// sneak part
+
+// follow part
+var isFollowing = {};
+var playerToFollow = {};
+var followInterval = {};
+// follow part
+
+let swingInterval = {};
+var miningState = {}; // Adiciona um estado de mineração
+
 global.listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
 global.Syntax = `
 <span style="color:yellow">Lista de comandos existentes:</span><br/>
@@ -1084,31 +1112,6 @@ ipcMain.on('captcha-input-janela1', (event, botUsername, captchaInput) => {
   })
 });
 
-// killaura part
-var killAuraActive = {}
-let attackInterval = {};
-let killAuraDelay = 1;
-let DistanceReach = 3;
-// killaura part
-
-// pesca part
-var PescaActive = {};
-// pesca part
-
-// goto part
-let isMoving = {};
-// goto part
-
-// sneak part
-var IsSneaking = {};
-// sneak part
-
-// follow part
-var isFollowing = {};
-var playerToFollow = {};
-var followInterval = {};
-// follow part
-
 async function pesca(bot) {
   // Verifique o inventário do bot por uma vara de pesca
   const itemVaraDePesca = bot.inventory.items().find(item => item.name === 'fishing_rod');
@@ -1171,9 +1174,6 @@ function createInventoryWindow() {
   inventoryWindow.loadURL('http://localhost:9531')
   inventoryWindow.setMenu(null)  // Adiciona esta linha
 }
-
-let swingInterval = {};
-var miningState = {}; // Adiciona um estado de mineração
 
 async function onDiggingCompleted(bot, err) {
   if (err) {
