@@ -17,6 +17,27 @@ const fs = require('fs');
 const path = require('path');
 const unidecode = require('unidecode');
 
+global.listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
+global.Syntax = `
+<span style="color:yellow">Lista de comandos existentes:</span><br/>
+<span style="color:white">- KillAura, Ataca todas entidades ao redor:</span> <span style="color:orange">$killaura</span><br/>
+<span style="color:white">- Follow, Segue algum jogador pelo nome:</span> <span style="color:orange">$follow [nome]</span><br/>
+<span style="color:white">- Miner, Minera blocos pelo nome do bloco:</span> <span style="color:orange">$miner [bloco]</span><br/>
+<span style="color:white">- Miner2, Minera blocos de coordenada tal ate coordenada tal:</span> <span style="color:orange">$miner2 [x] [y] [z] [x2] [y2] [z2]</span><br/>
+<span style="color:white">- Pesca, Pesca automaticamente:</span> <span style="color:orange">$pesca</span><br/>
+<span style="color:white">- Goto, Anda ate as coordenadas fornecidas:</span> <span style="color:orange">$goto [x] [y] [z]</span><br/>
+<span style="color:white">- Shift, Fica agachado:</span> <span style="color:orange">$shift</span><br/>
+<span style="color:white">- SetHotBarSlot, Seta o slot da sua hotbar para o fornecido (0-8):</span> <span style="color:orange">$sethotbarslot [numero]</span><br/>
+<span style="color:white">- SetInventorySlot, Seta o slot da janela aberta para o fornecido:</span> <span style="color:orange">$setinventoryslot [numero] [drop]</span><br/>
+<span style="color:white">- ListSlots, Mostra a quantidade de slots total da janela aberta:</span> <span style="color:orange">$listslots</span><br/>
+<span style="color:white">- DropAll, Dropa todos itens do inventario:</span> <span style="color:orange">$dropall</span><br/>
+<span style="color:white">- InventoryInterface, Mostra seu inventario em outra janela:</span> <span style="color:orange">$inventoryinterface</span><br/>
+<span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem</span><br/>
+<span style="color:white">- ClickEntity, Clica o botao direito e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
+<span style="color:white">- Move, Faz o bot se mover por um tempo determinado. (As direções podem ser combinadas com o caractere "|":</span> <span style="color:orange">$move [direções jump,forward,back,left,right,sneak,sprint] [duração em ticks]
+</span><br/>
+`
+
 let ClickTextDetect = false;
 let textFromFile = '';
 const filePath = path.join(__dirname, 'ClickText.txt');
@@ -56,7 +77,7 @@ function processClickEvent(bot, message) {
         // Se o text="" for o mesmo da que tiver o clickevent, rodar o comando que foi extraido dela
         if (unidecode(extra.text) === unidecode(textFromFile)) {
           bot.chat(extra.clickEvent.value);
-          mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
+          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
         }
       }
     });
@@ -328,7 +349,7 @@ async function getSRVRecord(domain) {
   return null;
 }
 
-let mainWindow
+global.mainWindow;
 let bots = {};
 var botsConectado = [];
 let mcData;
@@ -338,7 +359,7 @@ function sleep(ms) {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  global.mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     show: true,
@@ -351,8 +372,8 @@ function createWindow() {
     }
   })
 
-  mainWindow.loadFile('index.html')
-  mainWindow.setMenu(null) // Oculta o menu padrão
+  global.mainWindow.loadFile('index.html')
+  global.mainWindow.setMenu(null) // Oculta o menu padrão
 }
 
 app.whenReady().then(() => {
@@ -529,7 +550,7 @@ async function head_captcha_solver_2(bot, window) {
     return; // Se nem todos os itens são cabeças de jogador, o código para aqui
   }
 
-  mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " })
+  global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " })
 
   // Encontra a URL que aparece mais de uma vez
   let repeatedUrl = Object.keys(urls).find(url => urls[url] > 1);
@@ -537,9 +558,9 @@ async function head_captcha_solver_2(bot, window) {
   if (repeatedUrl) {
     let slotIndex = slots[repeatedUrl];
     bot.clickWindow(slotIndex, 0, 0); // Exemplo de como você pode clicar no slot
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " })
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " })
   } else {
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL que aparece mais de uma vez pra esse captcha fudido</span><br/> " })
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL que aparece mais de uma vez pra esse captcha fudido</span><br/> " })
   }
 }
 
@@ -580,7 +601,7 @@ async function head_captcha_solver(bot, window) {
     return; // Se nem todos os itens são cabeças de jogador, o código para aqui
   }
 
-  mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " })
+  global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " })
 
   // Encontra a URL única
   let uniqueUrl = Object.keys(urls).find(url => urls[url] === 1);
@@ -588,10 +609,10 @@ async function head_captcha_solver(bot, window) {
   if (uniqueUrl) {
     let slotIndex = slots[uniqueUrl];
     bot.clickWindow(slotIndex, 0, 0); // Exemplo de como você pode clicar no slot
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " })
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " })
   } else {
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " })
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Tentando outro metodo...</span><br/> " })
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " })
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Tentando outro metodo...</span><br/> " })
     head_captcha_solver_2(bot, window)
   }
 }
@@ -617,7 +638,7 @@ ipcMain.on('log', (event, message) => {
 });
 
 ipcMain.on('send-message-all', (event, message) => {
-  mainWindow.webContents.send('bot-message-all', message)
+  global.mainWindow.webContents.send('bot-message-all', message)
 });
 
 let botsaarray = []
@@ -732,7 +753,35 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
   }
 
+  bot.commandChecks = {}; // por que sim!
+
   bot.loadPlugin(pathfinder)
+
+  const pluginDir = './plugins';
+
+  fs.access(pluginDir, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error(`Diretório ${pluginDir} não existe.`);
+    }
+
+    fs.readdir(pluginDir, (err, files) => {
+      if (err) {
+        console.error('Não foi possível ler o diretório de plugins:', err);
+      }
+
+      if (files.length === 0) {
+        console.log('Nenhum plugin para carregar.');
+      }
+
+      files.forEach(file => {
+        if (path.extname(file) === '.js') {
+          console.log(`Carregando plugin: ${file}`);
+          const plugin = require(`${pluginDir}/${file}`);
+          bot.loadPlugin(plugin);
+        }
+      });
+    });
+  });
 
   let options = {
     port: 9531,
@@ -745,8 +794,8 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     //if (!botsConectado.includes(username)) {
     //  botsConectado.push(username);
     //  botsaarray.push(bot); // Add bot to botsaarray when it logs in
-    mainWindow.webContents.send('bot-connecting', username)
-    mainWindow.webContents.send('update-bot-status', { bot: username, status: 'connecting' })
+    global.mainWindow.webContents.send('bot-connecting', username)
+    global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'connecting' })
     console.log("connecting")
     //}
   })
@@ -755,9 +804,9 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     if (!botsConectado.includes(username)) {
       botsConectado.push(username);
       botsaarray.push(bot); // Add bot to botsaarray when it logs in
-      mainWindow.webContents.send('botsarraytohtml', botsConectado);
-      mainWindow.webContents.send('bot-connected', bot.username)
-      mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'connected' })
+      global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+      global.mainWindow.webContents.send('bot-connected', bot.username)
+      global.mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'connected' })
 
       const index = botsSemAutoReconnect.indexOf(username);
       if (index > -1) {
@@ -788,17 +837,17 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
       botsaarray.splice(indexArray, 1);
     }
 
-    mainWindow.webContents.send('botsarraytohtml', botsConectado);
+    global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
 
     await sleep(50); // aqui precisa de sleep pois o como bot ainda esta conectando vai ao mesmo tempo que o disconect tecnicamente, entao nao atualiza o status para disconected
 
     if (bot.username == null) {
-      mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
-      mainWindow.webContents.send('bot-disconnected', username)
+      global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+      global.mainWindow.webContents.send('bot-disconnected', username)
     }
     else {
-      mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'disconnected' })
-      mainWindow.webContents.send('bot-disconnected', bot.username)
+      global.mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'disconnected' })
+      global.mainWindow.webContents.send('bot-disconnected', bot.username)
     }
 
     if (janelasCaptcha[username]) {
@@ -860,12 +909,12 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     sleep(50); // aqui precisa de sleep pois o como bot ainda esta conectando vai ao mesmo tempo que o disconect tecnicamente, entao nao atualiza o status para disconected
 
     if (bot.username == null) {
-      mainWindow.webContents.send('bot-disconnected', username)
-      mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+      global.mainWindow.webContents.send('bot-disconnected', username)
+      global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
     }
     else {
-      mainWindow.webContents.send('bot-disconnected', bot.username)
-      mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'disconnected' })
+      global.mainWindow.webContents.send('bot-disconnected', bot.username)
+      global.mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'disconnected' })
     }*/
 
     console.log(err)
@@ -943,7 +992,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     }
 
     // Send the HTML message to the web contents
-    mainWindow.webContents.send('bot-message', { bot: username, message: htmlMessage });
+    global.mainWindow.webContents.send('bot-message', { bot: username, message: htmlMessage });
   });
 
   /* // debug things
@@ -958,7 +1007,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
   bot.on('message', (message) => {
     let fullMessage = processMessage(message);
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: fullMessage });
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: fullMessage });
 
     // Chama a função processClickEvent com a mensagem
     if (ClickTextDetect) {
@@ -969,7 +1018,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   bot.on('title', (title) => {
     try {
       let fullTitle = processTitle(title);
-      mainWindow.webContents.send('bot-message', { bot: bot.username, message: fullTitle });
+      global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: fullTitle });
     } catch (error) {
       console.error("Error: " + error);
     }
@@ -999,7 +1048,7 @@ ipcMain.on('messagewasclicable', (event, botUsername, command) => {
     if (bot.username == botUsername) {
       console.log("Extracted Command: " + command)
       bot.chat(command);
-      mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
+      global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
     }
   })
 });
@@ -1009,7 +1058,7 @@ ipcMain.on('captcha-input-janela1', (event, botUsername, captchaInput) => {
   botsaarrayCopy.forEach((bot) => {
     if (bot.username == botUsername) {
       bot.chat(captchaInput);
-      mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Captcha enviado!</span><br/>" })
+      global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Captcha enviado!</span><br/>" })
     }
   })
 });
@@ -1047,7 +1096,7 @@ async function pesca(bot) {
   if (itemVaraDePesca) {
     await bot.equip(itemVaraDePesca, 'hand');
   } else {
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Vara de pesca não encontrada no inventário.</span><br/>" })
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Vara de pesca não encontrada no inventário.</span><br/>" })
     return;
   }
 
@@ -1066,7 +1115,7 @@ async function pesca(bot) {
 
     // Se houver uma entidade, espere até que ela saia
     if (entity && bot.entity.position.distanceTo(entity.position) < 1) {
-      mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Esperando a entidade sair...</span><br/>" })
+      global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Esperando a entidade sair...</span><br/>" })
       bot.once('entityGone', async () => {
         await pesca(bot);
       });
@@ -1080,7 +1129,7 @@ async function pesca(bot) {
       }
     }
   } else {
-    mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Nenhum bloco de água encontrado nas proximidades.</span><br/>" })
+    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Nenhum bloco de água encontrado nas proximidades.</span><br/>" })
   }
 }
 
@@ -1281,32 +1330,14 @@ async function minerar2(bot, x1, y1, z1, x2, y2, z2) {
 }
 
 ipcMain.on('send-message', async (event, { botUsername, message }) => {
-
-  let listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
-  const Syntax = `
-  <span style="color:yellow">Lista de comandos existentes:</span><br/>
-  <span style="color:white">- KillAura, Ataca todas entidades ao redor:</span> <span style="color:orange">$killaura</span><br/>
-  <span style="color:white">- Follow, Segue algum jogador pelo nome:</span> <span style="color:orange">$follow [nome]</span><br/>
-  <span style="color:white">- Miner, Minera blocos pelo nome do bloco:</span> <span style="color:orange">$miner [bloco]</span><br/>
-  <span style="color:white">- Miner2, Minera blocos de coordenada tal ate coordenada tal:</span> <span style="color:orange">$miner2 [x] [y] [z] [x2] [y2] [z2]</span><br/>
-  <span style="color:white">- Pesca, Pesca automaticamente:</span> <span style="color:orange">$pesca</span><br/>
-  <span style="color:white">- Goto, Anda ate as coordenadas fornecidas:</span> <span style="color:orange">$goto [x] [y] [z]</span><br/>
-  <span style="color:white">- Shift, Fica agachado:</span> <span style="color:orange">$shift</span><br/>
-  <span style="color:white">- SetHotBarSlot, Seta o slot da sua hotbar para o fornecido (0-8):</span> <span style="color:orange">$sethotbarslot [numero]</span><br/>
-  <span style="color:white">- SetInventorySlot, Seta o slot da janela aberta para o fornecido:</span> <span style="color:orange">$setinventoryslot [numero] [drop]</span><br/>
-  <span style="color:white">- ListSlots, Mostra a quantidade de slots total da janela aberta:</span> <span style="color:orange">$listslots</span><br/>
-  <span style="color:white">- DropAll, Dropa todos itens do inventario:</span> <span style="color:orange">$dropall</span><br/>
-  <span style="color:white">- InventoryInterface, Mostra seu inventario em outra janela:</span> <span style="color:orange">$inventoryinterface</span><br/>
-  <span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem</span><br/>
-  <span style="color:white">- ClickEntity, Clica o botao direito e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
-  <span style="color:white">- Move, Faz o bot se mover por um tempo determinado. (As direções podem ser combinadas com o caractere "|":</span> <span style="color:orange">$move [direções jump,forward,back,left,right,sneak,sprint] [duração em ticks]
-  </span><br/>
-`
   botsaarray.forEach((bot) => {
     if (bot.username == botUsername) {
+      for (let checkCommand of Object.values(bot.commandChecks)) {
+        checkCommand(message);
+      }
       if (message.startsWith('$')) {
-        if (!listadecommandos.some(cmd => message.toLowerCase().startsWith(cmd.toLowerCase()))) {
-          mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Comando Inexistente</span><br><br/>" + Syntax })
+        if (!global.listadecommandos.some(cmd => message.toLowerCase().startsWith(cmd.toLowerCase()))) {
+          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Comando Inexistente</span><br><br/>" + global.Syntax })
         }
         else if (message.toLowerCase().startsWith("$clickentity")) {
           const playerFilter = (entity) => !botsConectado.includes(entity.username);
@@ -1314,9 +1345,9 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           if (entity) {
             bot.lookAt(entity.position.offset(0, entity.height, 0));
             bot.attack(entity)
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Entidade clicada!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Entidade clicada!</span><br/>` })
           } else {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nenhuma entidade proxima para clicar!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nenhuma entidade proxima para clicar!</span><br/>` })
           }
         }
         else if (message.toLowerCase().startsWith("$sethotbarslot ")) {
@@ -1324,23 +1355,23 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           const slotNumber = parseInt(slotarg[1]); // extrai o número do slot
 
           if (isNaN(slotNumber) || slotNumber < 0 || slotNumber > 8) {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido!</span><br/>` })
           }
           else {
             bot.setQuickBarSlot(slotNumber); // define o slot
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Slot da Hotbar setado para ${slotNumber}!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Slot da Hotbar setado para ${slotNumber}!</span><br/>` })
           }
         }
         else if (message.toLowerCase() == "$listslots") {
           if (bot.currentWindow) {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>A janela atual tem ${bot.currentWindow.slots.length} slots!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>A janela atual tem ${bot.currentWindow.slots.length} slots!</span><br/>` })
           } else {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nao ha janela aberta</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nao ha janela aberta</span><br/>` })
           }
         }
         else if (message.toLowerCase() == "$holditem") {
           bot.swingArm("left", true)
-          mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
+          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
         }
         else if (message.toLowerCase().startsWith("$setinventoryslot ")) {
           const slotarg = message.split(' ');
@@ -1348,25 +1379,25 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           const action = slotarg[2]; // extrai a ação
 
           if (isNaN(slotNumber)) {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido!</span><br/>` })
           }
           else if (action === 'drop') {
             (async () => {
               const item = bot.inventory.slots[slotNumber]; // Obtém o item no slot
               if (item) {
                 await bot.tossStack(item); // Solta o item
-                mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Dropando no slot do inventario ${slotNumber}!</span><br/>` })
+                global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Dropando no slot do inventario ${slotNumber}!</span><br/>` })
               }
             })();
           }
           else {
             bot.clickWindow(slotNumber, 0, 0); // Exemplo de como você pode clicar no slot
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Clicando no slot do inventario ${slotNumber}!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Clicando no slot do inventario ${slotNumber}!</span><br/>` })
           }
         }
         else if (message.toLowerCase().startsWith("$dropall")) {
           (async () => {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Dropando todos itens!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Dropando todos itens!</span><br/>` })
             var inventoryItemCount = bot.inventory.items().length;
             if (inventoryItemCount === 0) return;
 
@@ -1375,7 +1406,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
               await bot.tossStack(item);
               inventoryItemCount--;
             }
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Todos itens dropados!</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Todos itens dropados!</span><br/>` })
           })();
         }
         else if (message.toLowerCase().startsWith("$inventoryinterface")) {
@@ -1384,7 +1415,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             if (!bot.webInventory.isRunning && inventorywasopen) {
               bot.webInventory.start();
               createInventoryWindow();
-              mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Interface sendo aberta!</span><br><br/>" });
+              global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Interface sendo aberta!</span><br><br/>" });
             } else {
               if (isInvWindowOpened()) {
                 inventoryWindow.loadURL('about:blank');
@@ -1421,7 +1452,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
               if (bot.webInventory.isRunning) {
                 bot.webInventory.stop();
               }
-              mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Interface fechada!</span><br><br/>" });
+              global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Interface fechada!</span><br><br/>" });
             });
           })();
         }
@@ -1431,9 +1462,9 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             const blockId = args[1]; // extrai o ID do bloco do argumento
             miningState[bot.username] = !miningState[bot.username]; // Alterna o estado de mineração
             if (miningState[bot.username]) {
-              mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` })
+              global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` })
             } else {
-              mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Miner Desativado!</span><br/>` })
+              global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Miner Desativado!</span><br/>` })
             }
             await minerar(bot, blockId);
           })();
@@ -1444,9 +1475,9 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             const [startX, startY, startZ, endX, endY, endZ] = args.slice(1).map(Number); // extrai as coordenadas dos argumentos
             miningState[bot.username] = !miningState[bot.username]; // Alterna o estado de mineração
             if (miningState[bot.username]) {
-              mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` })
+              global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` })
             } else {
-              mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Miner Desativado!</span><br/>` })
+              global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Miner Desativado!</span><br/>` })
             }
             await minerar2(bot, startX, startY, startZ, endX, endY, endZ);
           })();
@@ -1455,11 +1486,11 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           PescaActive[bot.username] = !PescaActive[bot.username];
 
           if (PescaActive[bot.username]) {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Pesca ativado</span><br/>" });
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Pesca ativado</span><br/>" });
             pesca(bot);
           }
           else {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Pesca desativado</span><br/>" });
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Pesca desativado</span><br/>" });
           }
         }
         else if (message.toLowerCase().startsWith("$killAura.timems=")) {
@@ -1469,25 +1500,25 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             killAuraDelay = 1
           }
 
-          mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Delay do KillAura definido para ${killAuraDelay}ms</span><br/>` })
+          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Delay do KillAura definido para ${killAuraDelay}ms</span><br/>` })
         }
         else if (message.toLowerCase().startsWith("$killAura.distance=")) {
           DistanceReach = parseInt(message.split('=')[1]);
 
           if (DistanceReach <= 0 || DistanceReach > 6 || isNaN(DistanceReach)) {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido! Distancia setada para 3m</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido! Distancia setada para 3m</span><br/>` })
             DistanceReach = 3
           }
           else {
             console.log(DistanceReach)
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Distancia do KillAura definida para ${DistanceReach}m</span><br/>` })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Distancia do KillAura definida para ${DistanceReach}m</span><br/>` })
           }
         }
         else if (message.toLowerCase() == "$killaura") {
           killAuraActive[bot.username] = !killAuraActive[bot.username]
 
           if (killAuraActive[bot.username]) {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>KillAura ativado</span><br/>" })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>KillAura ativado</span><br/>" })
             attackInterval[bot.username] = setInterval(() => {
               const playerFilter = (entity) => entity.type === 'player' && !botsConectado.includes(entity.username);
               const playerEntity = bot.nearestEntity(playerFilter);
@@ -1502,14 +1533,14 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
               }
             }, killAuraDelay);
           } else {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>KillAura desativado</span><br/>" })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>KillAura desativado</span><br/>" })
             clearInterval(attackInterval[bot.username]);
           }
         }
         else if (message.toLowerCase().startsWith("$goto ")) {
           if (isMoving[bot.username]) {
             bot.pathfinder.setGoal(null);
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Parando o trajeto ate as coordenadas</span><br/>" })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Parando o trajeto ate as coordenadas</span><br/>" })
             isMoving[bot.username] = false;
           } else {
             const mcData = require('minecraft-data')(bot.version);
@@ -1524,12 +1555,12 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             bot.pathfinder.setMovements(defaultMove);
             bot.pathfinder.setGoal(goal);
             bot.pathfinder.tickTimeout = 1;
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Indo ate as coordenadas fornecidas...</span><br/>" })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Indo ate as coordenadas fornecidas...</span><br/>" })
             isMoving[bot.username] = true;
 
             bot.on('goal_reached', function () {
               if (isMoving[bot.username]) {
-                mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Cheguei nas coordenadas ${x}, ${y}, ${z}</span><br/>` })
+                global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Cheguei nas coordenadas ${x}, ${y}, ${z}</span><br/>` })
                 isMoving[bot.username] = false;
               }
             });
@@ -1541,10 +1572,10 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           const duration = parts.length > 2 ? parseInt(parts[2]) : 1; // duração padrão em ticks se não especificado
 
           if (directions == '') {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Argumentos invalidos!</span><br/>" });
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Argumentos invalidos!</span><br/>" });
           }
           else {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Movendo ate as direções \"" + directions + "\" com a duração de " + duration + " ticks</span><br/>" });
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Movendo ate as direções \"" + directions + "\" com a duração de " + duration + " ticks</span><br/>" });
 
             directions.forEach(direction => {
               switch (direction) {
@@ -1582,12 +1613,12 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           IsSneaking[bot.username] = !IsSneaking[bot.username]
 
           if (IsSneaking[bot.username]) {
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Shift Ativado</span><br/>" })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Shift Ativado</span><br/>" })
             bot.setControlState('sneak', true);
           }
           else {
             bot.setControlState('sneak', false);
-            mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Shift desativado</span><br/>" })
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Shift desativado</span><br/>" })
           }
         }
         else if (message.toLowerCase().startsWith("$follow ")) {
@@ -1602,7 +1633,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
 
             if (!playerToFollow[bot.username]) {
               console.log(`O jogador ${playerName} não foi encontrado!`);
-              mainWindow.webContents.send('bot-message', {
+              global.mainWindow.webContents.send('bot-message', {
                 bot: bot.username,
                 message: `<br/><span style='color:red'>O jogador ${playerName} não foi encontrado!</span><br/>`
               });
@@ -1618,7 +1649,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
                   clearInterval(followInterval[bot.username]); // Para o intervalo
                   bot.pathfinder.setGoal(null); // Para de seguir o jogador
                   isFollowing[bot.username] = false;
-                  mainWindow.webContents.send('bot-message', {
+                  global.mainWindow.webContents.send('bot-message', {
                     bot: bot.username,
                     message: `<br/><span style='color:red'>Follow desativado</span><br/>`
                   });
@@ -1626,7 +1657,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
               }, 100);
 
               isFollowing[bot.username] = true;
-              mainWindow.webContents.send('bot-message', {
+              global.mainWindow.webContents.send('bot-message', {
                 bot: bot.username,
                 message: `<br/><span style='color:green'>Seguindo ${playerName}</span><br/>`
               });
@@ -1635,7 +1666,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             clearInterval(followInterval[bot.username]); // Para o intervalo
             bot.pathfinder.setGoal(null); // Para de seguir o jogador
             isFollowing[bot.username] = false;
-            mainWindow.webContents.send('bot-message', {
+            global.mainWindow.webContents.send('bot-message', {
               bot: bot.username,
               message: `<br/><span style='color:red'>Follow desativado</span><br/>`
             });
