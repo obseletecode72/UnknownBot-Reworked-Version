@@ -624,6 +624,7 @@ let botsaarray = []
 let placedBlocks = new Set();
 
 ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyType }) => {
+  console.log(version)
   if (botsConectado.includes(username)) return
 
   let bot;
