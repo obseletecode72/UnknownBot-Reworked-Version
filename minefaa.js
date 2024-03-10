@@ -1282,7 +1282,7 @@ async function minerar2(bot, x1, y1, z1, x2, y2, z2) {
 
 ipcMain.on('send-message', async (event, { botUsername, message }) => {
 
-  let listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
+  let listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
   const Syntax = `
   <span style="color:yellow">Lista de comandos existentes:</span><br/>
   <span style="color:white">- KillAura, Ataca todas entidades ao redor:</span> <span style="color:orange">$killaura</span><br/>
@@ -1292,12 +1292,13 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
   <span style="color:white">- Pesca, Pesca automaticamente:</span> <span style="color:orange">$pesca</span><br/>
   <span style="color:white">- Goto, Anda ate as coordenadas fornecidas:</span> <span style="color:orange">$goto [x] [y] [z]</span><br/>
   <span style="color:white">- Shift, Fica agachado:</span> <span style="color:orange">$shift</span><br/>
-  <span style="color:white">- SetHotBarSlot, Seta o slot da sua hotbar para o fornecido:</span> <span style="color:orange">$sethotbarslot [numero]</span><br/>
+  <span style="color:white">- SetHotBarSlot, Seta o slot da sua hotbar para o fornecido (0-8):</span> <span style="color:orange">$sethotbarslot [numero]</span><br/>
   <span style="color:white">- SetInventorySlot, Seta o slot da janela aberta para o fornecido:</span> <span style="color:orange">$setinventoryslot [numero] [drop]</span><br/>
+  <span style="color:white">- ListSlots, Mostra a quantidade de slots total da janela aberta:</span> <span style="color:orange">$listslots</span><br/>
   <span style="color:white">- DropAll, Dropa todos itens do inventario:</span> <span style="color:orange">$dropall</span><br/>
   <span style="color:white">- InventoryInterface, Mostra seu inventario em outra janela:</span> <span style="color:orange">$inventoryinterface</span><br/>
   <span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem</span><br/>
-  <span style="color:white">- ClickEntity, Clica o botao esquerdo e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
+  <span style="color:white">- ClickEntity, Clica o botao direito e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
   <span style="color:white">- Move, Faz o bot se mover por um tempo determinado. (As direções podem ser combinadas com o caractere "|":</span> <span style="color:orange">$move [direções jump,forward,back,left,right,sneak,sprint] [duração em ticks]
   </span><br/>
 `
@@ -1312,7 +1313,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           const entity = bot.nearestEntity(playerFilter);
           if (entity) {
             bot.lookAt(entity.position.offset(0, entity.height, 0));
-            bot.activateEntity(entity);
+            bot.attack(entity)
             mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Entidade clicada!</span><br/>` })
           } else {
             mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nenhuma entidade proxima para clicar!</span><br/>` })
@@ -1328,6 +1329,13 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           else {
             bot.setQuickBarSlot(slotNumber); // define o slot
             mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Slot da Hotbar setado para ${slotNumber}!</span><br/>` })
+          }
+        }
+        else if (message.toLowerCase() == "$listslots") {
+          if (bot.currentWindow) {
+            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>A janela atual tem ${bot.currentWindow.slots.length} slots!</span><br/>` })
+          } else {
+            mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nao ha janela aberta</span><br/>` })
           }
         }
         else if (message.toLowerCase() == "$holditem") {
