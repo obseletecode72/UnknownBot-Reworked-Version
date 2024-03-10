@@ -448,12 +448,20 @@ function processMinecraftCodes(message) {
 
 function processMessage(message) {
   let fullMessage = message.text ? escapeHtml(message.text) : '';
+  if (fullMessage.includes('§l')) {
+    let parts = fullMessage.split('§l');
+    let boldParts = parts[1].split(' ');
+    boldParts[0] = `<strong>${boldParts[0]}</strong>`;
+    parts[1] = boldParts.join(' ');
+    fullMessage = parts.join('');
+  }
   fullMessage = processMinecraftCodes(fullMessage);
   let htmlColor = minecraftColorToHtml(message.color);
   let fontWeight = message.bold ? 'bold' : 'normal';
   if (message.extra) {
     message.extra.forEach((extraMessage) => {
-      fullMessage += ` <span style="color:${minecraftColorToHtml(extraMessage.color)}; font-weight:${extraMessage.bold ? 'bold' : 'normal'};">${processMessage(extraMessage)}</span>`;
+      let extraFullMessage = extraMessage.text.includes('§l') ? `<strong>${processMessage(extraMessage)}</strong>` : processMessage(extraMessage);
+      fullMessage += ` <span style="color:${minecraftColorToHtml(extraMessage.color)}; font-weight:${extraMessage.bold ? 'bold' : 'normal'};">${extraFullMessage}</span>`;
     });
   }
   return `<span style="color:${htmlColor}; font-weight:${fontWeight};">${fullMessage}</span>`;
@@ -472,14 +480,14 @@ function processTitle(title) {
   let fullTitle, htmlColor, fontWeight;
   if (titleObject.value) {
     // Estrutura para a versão 1.20.4
-    fullTitle = escapeHtml(titleObject.value.text.value);
+    fullTitle = escapeHtml(titleObject.value.text.value.replace(/§l/g, '<strong>')).replace(/<\/strong>/g, '') + '</strong>';
     htmlColor = minecraftColorToHtml(titleObject.value.color.value);
-    fontWeight = titleObject.value.bold ? 'bold' : 'normal';
+    fontWeight = titleObject.value.bold || titleObject.value.text.value.includes('§l') ? 'bold' : 'normal';
   } else {
     // Estrutura para a versão 1.20.2
-    fullTitle = escapeHtml(titleObject.text);
+    fullTitle = escapeHtml(titleObject.text.replace(/§l/g, '<strong>')).replace(/<\/strong>/g, '') + '</strong>';
     htmlColor = minecraftColorToHtml(titleObject.color);
-    fontWeight = titleObject.bold ? 'bold' : 'normal';
+    fontWeight = titleObject.bold || titleObject.text.includes('§l') ? 'bold' : 'normal';
   }
 
   return `<span style="color:${htmlColor}; font-weight:${fontWeight};">${fullTitle}</span>`;
@@ -918,6 +926,11 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
           }
         });
       });
+    }
+    else if (reasonObj.text && reasonObj.color) {
+      // This is the new case we are adding
+      let message = processMinecraftCodes(reasonObj.text);
+      htmlMessage += `<br/><p style="color: ${reasonObj.color};">${message}</p>`;
     }
     else if (reasonObj.text) {
       let message = processMinecraftCodes(reasonObj.text);
