@@ -1,4 +1,4 @@
-let herbalismoAtivo = false;
+let herbalismoAtivo = {};
 const plantacoes = ['carrots', 'potatoes', 'wheat'];
 
 module.exports = function (bot) {
@@ -7,25 +7,31 @@ module.exports = function (bot) {
     global.Syntax += '<span style="color:white">- Herbalismo, Quebra quase todos tipos de plantacoes em um raio de 3 blocos</span> <span style="color:orange">$herbalismo</span><br/>';
   }
 
-  bot.commandChecks['herbalismo'] = function(message) {
+  bot.commandChecks['herbalismo'] = function (message) {
     if (message.startsWith('$')) {
       if (global.listadecommandos.some(cmd => message.toLowerCase().startsWith(cmd.toLowerCase()))) {
         if (message.toLowerCase() === "$herbalismo") {
-          herbalismoAtivo = !herbalismoAtivo;
-          let status = herbalismoAtivo ? 'ativado' : 'desativado';
-          let cor = herbalismoAtivo ? 'green' : 'red';
+          herbalismoAtivo[bot.username] = !herbalismoAtivo[bot.username];
+          let status = herbalismoAtivo[bot.username] ? 'ativado' : 'desativado';
+          let cor = herbalismoAtivo[bot.username] ? 'green' : 'red';
           global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:${cor}'>Herbalismo ${status}!</span><br/>` });
-          if (herbalismoAtivo) {
+          if (herbalismoAtivo[bot.username]) {
             quebraPlantacoes(bot);
           }
         }
       }
     }
   };
+
+  bot.on('end', function () {
+    if (herbalismoAtivo[bot.username]) {
+      herbalismoAtivo[bot.username] = false;
+    }
+  });
 };
 
 function quebraPlantacoes(bot) {
-  if (!herbalismoAtivo) return;
+  if (!herbalismoAtivo[bot.username]) return;
   const raio = 3;
   const posicaoAtual = bot.entity.position;
   for (let x = -raio; x <= raio; x++) {
@@ -39,7 +45,7 @@ function quebraPlantacoes(bot) {
       }
     }
   }
-  if (herbalismoAtivo) setTimeout(() => quebraPlantacoes(bot), 100);
+  if (herbalismoAtivo[bot.username]) setTimeout(() => quebraPlantacoes(bot), 100);
 }
 
 function onFinishedDigging(err) {
