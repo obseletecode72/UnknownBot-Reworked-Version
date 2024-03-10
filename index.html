@@ -44,7 +44,7 @@
       </div>
       <div class="aligned-item" id="delayDiv" style="display: none;">
         <label for="delay" class="delay-label">Delay(MS):</label>
-        <input type="number" id="delay" name="delay" class="delay-input" min="0" max="10000" value="0" onchange="sendData()" oninput="validateInput(this)">
+        <input type="number" id="delay" name="delay" class="delay-input" style="display: none;" min="0" max="10000" value="0" onchange="sendData()" oninput="validateInput(this)">
       </div>
       <br>
       <input type="submit" value="Connect">
@@ -61,8 +61,8 @@
         <button id="remove-all-button">Remove All Bots</button>
       </div>
       </div>
-      <div id="chat-all" class="chat"></div>
-      <input type="text" id="input-all" placeholder="Insira sua mensagem" class="input">
+      <div id="chat-all" style="display: none;" class="chat"></div>
+      <input type="text" id="input-all" style="display: none;" placeholder="Insira sua mensagem" class="input">
     </div>
     <div id="bots">
     <h2>Bots</h2>
@@ -158,8 +158,8 @@
 																														<button id="${botUsername}-remove-button">Remove Bot</button>
                                                             </div>
 																												</div>
-																												<div id="${botUsername}-chat" class="chat"></div>
-																												<input type="text" id="${botUsername}-input" placeholder="Insira sua mensagem" class="input">`
+																												<div id="${botUsername}-chat" style="display: none;" class="chat"></div>
+																												<input type="text" id="${botUsername}-input" style="display: none;" placeholder="Insira sua mensagem" class="input">`
           document.getElementById('bots').appendChild(newBotDiv)
         }
       })
@@ -178,8 +178,8 @@
 																														<button id="${botUsername}-remove-button">Remove Bot</button>
                                                             </div>
 																													</div>
-																													<div id="${botUsername}-chat" class="chat"></div>
-																													<input type="text" id="${botUsername}-input" placeholder="Insira sua mensagem" class="input">`
+																													<div id="${botUsername}-chat" style="display: none;" class="chat"></div>
+																													<input type="text" id="${botUsername}-input" style="display: none;" placeholder="Insira sua mensagem" class="input">`
           document.getElementById('bots').appendChild(newBotDiv)
         }
       })
@@ -221,7 +221,7 @@
         //ipcRenderer.send('log', message); // Envia botUsername para o processo de // log
         const chatDivAll = document.getElementById(`chat-all`)
         if (chatDivAll) {
-          // Adicionando a mensagem ao chat
+          // Adicionando a mensagem ao chat'
           chatDivAll.insertAdjacentHTML('beforeend', message);
           // Adicionando uma quebra de linha após cada mensagem
           chatDivAll.appendChild(document.createElement('br'));
