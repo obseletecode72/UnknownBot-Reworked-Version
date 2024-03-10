@@ -221,6 +221,7 @@ input[type="submit"]:hover {
 #input-all {
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
+  width: 100%;
 }
 
 #chat-all {
@@ -229,4 +230,24 @@ input[type="submit"]:hover {
 
 .button-group {
   height: 100%;
+}
+
+.chat {
+  display: flex;
+  height: 10rem;
+  flex-direction: column;
+  overflow-y: auto;
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
+  padding: 1.25rem;
+}
+
+.input {
+  margin-top: 1.25rem;
+  display: flex;
+  height: 1.25rem;
+  flex-direction: column;
+  border-radius: 0px;
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
 }
