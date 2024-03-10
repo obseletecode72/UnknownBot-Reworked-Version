@@ -860,6 +860,27 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
       inventoryWindow = null;
     }
 
+    if (miningState[bot.username]) {
+      miningState[bot.username] = false;
+    }
+
+    if (PescaActive[bot.username]) {
+      PescaActive[bot.username] = false;
+    }
+
+    if (killAuraActive[bot.username]) {
+      killAuraActive[bot.username] = false;
+    }
+
+    if (IsSneaking[bot.username]) {
+      IsSneaking[bot.username] = false;
+    }
+
+    if (followInterval[bot.username]) {
+      clearInterval(followInterval[bot.username]);
+      isFollowing[bot.username] = false;
+    }
+
     if (autoreconnect) {
       await sleep(50); // esperar ficar tudo ok para o autoreconnect ? por que esta verificao ? para caso delay do autoreconnect seja 0 ou muito baixo
       await sleep(autoreconnectdelay); // esperar delay do autoreconnect
@@ -1423,7 +1444,6 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
               }
               bot.webInventory.stop();
             }
-
             let intervalIdIV = setInterval(async () => {
               if (!bot.webInventory.isRunning) {
                 if (isInvWindowOpened()) {
