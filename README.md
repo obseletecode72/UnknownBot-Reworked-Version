@@ -14,11 +14,6 @@ Este projeto usa a API Mineflayer. Se encontrar algum bug, por favor, crie uma i
 
 Se quiser colaborar com o projeto e fazer suas modificações, e quiser que eu implemente por padrão aqui no repositório, abra um Pull Request. Todas as contribuições são bem-vindas!
 
-## Contato
-
-Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgqaw
-
-
 ## Como instalar?
 
 1- Instale o Node JS mais recente por aqui: https://nodejs.org/en
@@ -30,3 +25,14 @@ Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgq
 ## Para que serve o arquivo digging.js?
 
 Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e uma versao melhorada para o uso de quebrar blocos pois contem bugs igual eu disse, para instalar isso voce pode substituir o arquivo em ´node_modules\mineflayer\lib\plugins´
+
+## Plugins
+
+Sistema de plugins adicionado, tambem pode conter bugs, qualquer problema reporte entre em contato no discord, como a API e Mineflayer voce pode verificar a documentacao aqui: https://github.com/PrismarineJS/mineflayer/blob/master/docs/api.md
+Tambem tem os exemplos para voce comecar a produzir seus plugins na pasta plugins
+
+## Contato
+
+Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgqaw
+
+
