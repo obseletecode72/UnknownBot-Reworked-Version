@@ -84,6 +84,9 @@
       <input type="radio" id="socks5" name="proxyType" value="socks5" class="round-checkbox">
       <label for="socks5">Socks5</label>
       <br>
+      <input type="radio" id="httpproxy" name="proxyType" value="httpproxy" class="round-checkbox">
+      <label for="httpproxy">HTTP</label>
+      <br>
       <br>
       <div class="aligned-item">
         <input type="checkbox" id="autoReconnect" name="autoReconnect" class="round-checkbox" onchange="sendData()">
@@ -97,7 +100,7 @@
       <br>
       <br>
       <label for="delayBC" class="delayBC-label">Delay Between Connect(MS):</label>
-      <input type="number" id="delayBC" name="delayBC" class="delayBC-input" min="0" max="15000" value="0"
+      <input type="number" id="delayBC" name="delayBC" class="delayBC-input" min="0" max="10000" value="0"
         oninput="validateInput(this)">
       <br>
       <input type="submit" value="Connect">
@@ -183,7 +186,18 @@
           password
         } : null
       })
-      const proxyType = document.getElementById('socks4').checked ? '4' : '5';
+      let proxyType = null;
+      if(document.getElementById('socks4').checked)
+      {
+        proxyType = '4'
+      }
+      else if(document.getElementById('socks5').checked)
+      {
+        proxyType = '5'
+      }
+      else if(document.getElementById('httpproxy').checked){
+        proxyType = 'http'
+      }
       for (let index = 0; index < usernames.length; index++) {
         const username = usernames[index];
         botVersions[username] = version
@@ -331,9 +345,9 @@
       } else if (event.target.id === 'remove-all-button') {
         // Remover todos os bots
         // Obtenha todos os elementos div com a classe 'bot-div'
-        let botDivs = document.querySelectorAll('.bot-div');
+        const botDivs = document.querySelectorAll('.bot-div');
         // Crie uma lista de nomes de bots a partir dos IDs dos divs
-        let botNames = Array.from(botDivs).map(div => div.id);
+        const botNames = Array.from(botDivs).map(div => div.id);
         botNames.forEach(botUsername => {
           const botDiv = document.getElementById(botUsername)
           if (botDiv) {
@@ -350,9 +364,9 @@
       else if (event.target.id === 'remove-disconnected-button') {
         // Remover todos os bots
         // Obtenha todos os elementos div com a classe 'bot-div'
-        let botDivs = document.querySelectorAll('.bot-div');
+        const botDivs = document.querySelectorAll('.bot-div');
         // Crie uma lista de nomes de bots a partir dos IDs dos divs
-        let botNames = Array.from(botDivs).map(div => div.id);
+        const botNames = Array.from(botDivs).map(div => div.id);
         botNames.forEach(botUsername => {
           const botDiv = document.getElementById(botUsername)
           const botStatusElement = document.getElementById(`${botUsername}-status`)
@@ -372,9 +386,9 @@
         // Reconectar todos os bots
         const host = document.getElementById('host').value
         // Obtenha todos os elementos div com a classe 'bot-div'
-        let botDivs = document.querySelectorAll('.bot-div');
+        const botDivs = document.querySelectorAll('.bot-div');
         // Crie uma lista de nomes de bots a partir dos IDs dos divs
-        let botNames = Array.from(botDivs).map(div => div.id);
+        const botNames = Array.from(botDivs).map(div => div.id);
         //ipcRenderer.send('log', JSON.stringify(botNames)); // Envia botUsername para o processo de log
         botNames.forEach(botUsername => {
           const botStatusElement = document.getElementById(`${botUsername}-status`)
@@ -390,9 +404,9 @@
         // Reconectar todos os bots
         const host = document.getElementById('host').value
         // Obtenha todos os elementos div com a classe 'bot-div'
-        let botDivs = document.querySelectorAll('.bot-div');
+        const botDivs = document.querySelectorAll('.bot-div');
         // Crie uma lista de nomes de bots a partir dos IDs dos divs
-        let botNames = Array.from(botDivs).map(div => div.id);
+        const botNames = Array.from(botDivs).map(div => div.id);
         //ipcRenderer.send('log', JSON.stringify(botNames)); // Envia botUsername para o processo de log
         botNames.forEach(botUsername => {
           const version = botVersions[botUsername]

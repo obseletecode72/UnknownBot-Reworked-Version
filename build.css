@@ -188,6 +188,8 @@ input[type="submit"]:hover {
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 700;
+  padding: 0.65rem;
+  margin-left: -16px;
 }
 
 .bot-controls button {
@@ -256,6 +258,6 @@ input[type="submit"]:hover {
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+  -webkit-appearance: none;
+  margin: 0;
 }

@@ -1,17 +1,16 @@
 const dns = require('dns');
 const util = require('util');
-const Convert = require('ansi-to-html');
-const convert = new Convert();
 const { app, BrowserWindow, ipcMain } = require('electron')
 const mineflayer = require('mineflayer')
-const { ChatMessage } = require('prismarine-chat')
+const mc = require('minecraft-protocol')
+const Http = require('http')
+const ProxyAgent = require('proxy-agent')
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 var Vec3 = require('vec3');
 const atob = require('atob');
 var Socks = require('socks').SocksClient;
 const inventoryViewer = require('mineflayer-web-inventory')
 const PNGImage = require('pngjs-image');
-const net = require('net')
 require('electron-reload')(__dirname)
 const fs = require('fs');
 const path = require('path');
@@ -678,6 +677,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
   let bot;
   if (proxy && proxy.ip && proxy.port && !proxy.user && !proxy.password && (proxyType === '4' || proxyType === '5')) {
+    console.log("proxy, no pass, no user, type: " + proxyType)
     const record = await getSRVRecord(host);
     if (!record) {
       console.log('SRV Record nao encontrado, bot anulado... ');
@@ -710,6 +710,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     });
   }
   else if (proxy && proxy.ip && proxy.port && proxy.user && !proxy.password && (proxyType === '4' || proxyType === '5')) {
+    console.log("proxy, no pass, type: " + proxyType)
     const record = await getSRVRecord(host);
     if (!record) {
       console.log('SRV Record nao encontrado, bot anulado... ');
@@ -744,6 +745,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     });
   }
   else if (proxy && proxy.ip && proxy.port && proxy.user && proxy.password && (proxyType === '4' || proxyType === '5')) {
+    console.log("proxy, type: " + proxyType)
     const record = await getSRVRecord(host);
     if (!record) {
       console.log('SRV Record nao encontrado, bot anulado... ');
@@ -776,6 +778,108 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
       username: username,
       version: version
     });
+  }
+  else if (proxy && proxy.ip && proxy.port && !proxy.user && !proxy.password && (proxyType === 'http')) {
+    console.log("proxy, no pass, no user, type: " + proxyType)
+    const record = await getSRVRecord(host);
+    if (!record) {
+      console.log('SRV Record nao encontrado, bot anulado... ');
+      return;
+    }
+
+    bot = mineflayer.createBot({
+      connect: (client) => {
+        const req = Http.request({
+          host: proxy.ip,
+          port: proxy.port,
+          method: 'CONNECT',
+          path: record.ip + ':' + parseInt(record.port)
+        })
+        req.end()
+
+        req.on('connect', (res, stream) => {
+          client.setSocket(stream)
+          client.emit('connect')
+        })
+      },
+      agent: new ProxyAgent({ protocol: 'http', host: proxy.ip, port: proxy.port }),
+      username: username,
+      version: version
+    })
+  }
+  else if (proxy && proxy.ip && proxy.port && proxy.user && !proxy.password && (proxyType === 'http')) {
+    console.log("proxy, no pass, type: " + proxyType)
+    const record = await getSRVRecord(host);
+    if (!record) {
+      console.log('SRV Record nao encontrado, bot anulado... ');
+      return;
+    }
+
+    bot = mineflayer.createBot({
+      connect: (client) => {
+        const req = Http.request({
+          host: proxy.ip,
+          port: proxy.port,
+          method: 'CONNECT',
+          path: record.ip + ':' + parseInt(record.port),
+          headers: {
+            'Proxy-Authorization': 'Basic ' + Buffer.from(proxy.user).toString('base64')
+          }
+        })
+        req.end()
+
+        req.on('connect', (res, stream) => {
+          client.setSocket(stream)
+          client.emit('connect')
+        })
+      },
+      agent: new ProxyAgent({
+        protocol: 'http',
+        host: proxy.ip,
+        port: proxy.port,
+        auth: proxy.user
+      }),
+      username: username,
+      version: version
+    })
+
+  }
+  else if (proxy && proxy.ip && proxy.port && proxy.user && proxy.password && (proxyType === 'http')) {
+    console.log("proxy, type: " + proxyType)
+    const record = await getSRVRecord(host);
+    if (!record) {
+      console.log('SRV Record nao encontrado, bot anulado... ');
+      return;
+    }
+
+    bot = mineflayer.createBot({
+      connect: (client) => {
+        const req = Http.request({
+          host: proxy.ip,
+          port: proxy.port,
+          method: 'CONNECT',
+          path: record.ip + ':' + parseInt(record.port),
+          headers: {
+            'Proxy-Authorization': 'Basic ' + Buffer.from(proxy.user + ':' + proxy.password).toString('base64')
+          }
+        })
+        req.end()
+
+        req.on('connect', (res, stream) => {
+          client.setSocket(stream)
+          client.emit('connect')
+        })
+      },
+      agent: new ProxyAgent({
+        protocol: 'http',
+        host: proxy.ip,
+        port: proxy.port,
+        auth: proxy.user + ':' + proxy.password
+      }),
+      username: username,
+      version: version
+    })
+
   }
   else {
     bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
@@ -867,16 +971,8 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
     global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
 
-    await sleep(50); // aqui precisa de sleep pois o como bot ainda esta conectando vai ao mesmo tempo que o disconect tecnicamente, entao nao atualiza o status para disconected
-
-    if (bot.username == null) {
-      global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
-      global.mainWindow.webContents.send('bot-disconnected', username)
-    }
-    else {
-      global.mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'disconnected' })
-      global.mainWindow.webContents.send('bot-disconnected', bot.username)
-    }
+    global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+    global.mainWindow.webContents.send('bot-disconnected', username)
 
     if (janelasCaptcha[username]) {
       janelasCaptcha[username].close();
