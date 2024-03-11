@@ -176,7 +176,7 @@ input[type="submit"]:hover {
 
 .bot-controls {
   display: flex;
-  height: 2.5rem;
+  height: fit-content;
   align-items: center;
   justify-content: space-between;
   border-radius: 0px;
@@ -252,4 +252,10 @@ input[type="submit"]:hover {
   background-color: rgb(39, 39, 42);
   border-color: rgb(39, 39, 42);
   color: white;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
