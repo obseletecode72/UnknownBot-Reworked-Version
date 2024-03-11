@@ -28,9 +28,7 @@ Se quiser colaborar com o projeto e fazer suas modificações, e quiser que eu i
 
 OBS: Para abrir um cmd na mesma pasta clique ao lado do nome da pasta no "Vazio" e apague todas as letras e digite 'cmd' apos isso pressione enter (aonde esta em azul e aonde voce deve clicar)
 
-<p align="center">
-  <img src="https://imgur.com/a/uyQP2Sv" />
-</p>
+![image](https://github.com/obseletecode72/UnknownBot-Reworked-Version/assets/138137862/725f3a9a-4364-4138-8024-51e9a20aaed5)
 
 ## Para que serve o arquivo digging.js?
 
