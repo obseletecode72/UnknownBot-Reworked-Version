@@ -836,7 +836,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
           client.setSocket(stream)
           client.emit('connect')
         })
-        
+
         req.on('error', (err) => {
           console.log(err);
         })
@@ -1032,24 +1032,27 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   bot._client.on('map', ({ data }) => {
     if (!data) return;
 
-    const tamanho = Math.sqrt(data.length);
-    const imagem = PNGImage.createImage(tamanho, tamanho);
+    const item = bot.heldItem;
+    if (item && item.name === 'filled_map') {
+      const tamanho = Math.sqrt(data.length);
+      const imagem = PNGImage.createImage(tamanho, tamanho);
 
-    for (let x = 0; x < tamanho; x++) {
-      for (let z = 0; z < tamanho; z++) {
-        const idCor = data[x + (z * tamanho)];
-        imagem.setAt(x, z, getColor(idCor));
+      for (let x = 0; x < tamanho; x++) {
+        for (let z = 0; z < tamanho; z++) {
+          const idCor = data[x + (z * tamanho)];
+          imagem.setAt(x, z, getColor(idCor));
+        }
       }
+
+      imagem.toBlob(function (erro, blob) {
+        if (erro) throw erro;
+
+        // Armazena a imagem na memória como uma string codificada em base64
+        captchaImages[bot.username] = blob.toString('base64');
+
+        app.whenReady().then(() => CreateCaptchaWindow(bot.username));
+      });
     }
-
-    imagem.toBlob(function (erro, blob) {
-      if (erro) throw erro;
-
-      // Armazena a imagem na memória como uma string codificada em base64
-      captchaImages[bot.username] = blob.toString('base64');
-
-      app.whenReady().then(() => CreateCaptchaWindow(bot.username));
-    });
   });
 
   bot.on('error', (err) => {
