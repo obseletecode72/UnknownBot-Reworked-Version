@@ -59,7 +59,7 @@ global.Syntax = `
 <span style="color:white">- ListSlots, Mostra a quantidade de slots total da janela aberta:</span> <span style="color:orange">$listslots</span><br/>
 <span style="color:white">- DropAll, Dropa todos itens do inventario:</span> <span style="color:orange">$dropall</span><br/>
 <span style="color:white">- InventoryInterface, Mostra seu inventario em outra janela:</span> <span style="color:orange">$inventoryinterface</span><br/>
-<span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem</span><br/>
+<span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem [right,left]</span><br/>
 <span style="color:white">- ClickEntity, Clica o botao direito e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
 <span style="color:white">- Move, Faz o bot se mover por um tempo determinado. (As direções podem ser combinadas com o caractere "|":</span> <span style="color:orange">$move [direções jump,forward,back,left,right,sneak,sprint] [duração em ticks]
 </span><br/>
@@ -388,7 +388,7 @@ function sleep(ms) {
 function createWindow() {
   global.mainWindow = new BrowserWindow({
     width: 1400,
-    height: 800,
+    height: 600,
     show: true,
     resizable: false,
     autoHideMenuBar: true,
@@ -1501,9 +1501,17 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nao ha janela aberta</span><br/>` })
           }
         }
-        else if (message.toLowerCase() == "$holditem") {
-          bot.swingArm("left", true)
-          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
+        else if (message.toLowerCase() == "$holditem ") {
+          const args = message.split(' ')
+          if (args[1] == "left"){  
+            bot.swingArm("left", true)
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
+          } else if (args[1] == "right"){
+            bot.swingArm("right", true)
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
+          } else {
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Use $holditem right ou $holditem left</span><br/>` })
+          }
         }
         else if (message.toLowerCase().startsWith("$setinventoryslot ")) {
           const slotarg = message.split(' ');
