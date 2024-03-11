@@ -16,11 +16,21 @@ Se quiser colaborar com o projeto e fazer suas modificações, e quiser que eu i
 
 ## Como instalar?
 
+0.1- Clique no botao verde 'Code' desta pagina e clique em 'Download Zip'
+
+0.2- Crie uma nova pasta na Area de Trabalho e use o WinRAR para extrair os arquivos para essa pasta
+
 1- Instale o Node JS mais recente por aqui: https://nodejs.org/en
 
-2- Apos extrair a pasta para a sua area de trabalho abra um cmd na mesma pasta e use ´npm install´, isso ira instalar todas dependencias do projeto baseado no ´package.json´
+2- Abra um cmd na mesma pasta em que voce extraiu os arquivos e use ´npm install´, isso ira instalar todas dependencias do projeto baseado no ´package.json´
 
 3- Use ´electron minefaa.js´ ou ´npx electron minefaa.js´ se nao der certo o primeiro comando, e pronto voce podera usar o bot
+
+OBS: Para abrir um cmd na mesma pasta clique ao lado do nome da pasta no "Vazio" e apague todas as letras e digite 'cmd' apos isso pressione enter (aonde esta em azul e aonde voce deve clicar)
+
+<p align="center">
+  <img src="https://imgur.com/a/uyQP2Sv" />
+</p>
 
 ## Para que serve o arquivo digging.js?
 
