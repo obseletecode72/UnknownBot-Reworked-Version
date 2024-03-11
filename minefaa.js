@@ -801,6 +801,10 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
           client.setSocket(stream)
           client.emit('connect')
         })
+
+        req.on('error', (err) => {
+          console.log(err);
+        })
       },
       agent: new ProxyAgent({ protocol: 'http', host: proxy.ip, port: proxy.port }),
       username: username,
@@ -831,6 +835,10 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
         req.on('connect', (res, stream) => {
           client.setSocket(stream)
           client.emit('connect')
+        })
+        
+        req.on('error', (err) => {
+          console.log(err);
         })
       },
       agent: new ProxyAgent({
@@ -868,6 +876,10 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
         req.on('connect', (res, stream) => {
           client.setSocket(stream)
           client.emit('connect')
+        })
+
+        req.on('error', (err) => {
+          console.log(err);
         })
       },
       agent: new ProxyAgent({
