@@ -388,7 +388,7 @@ function sleep(ms) {
 function createWindow() {
   global.mainWindow = new BrowserWindow({
     width: 1400,
-    height: 800,
+    height: 600,
     show: true,
     resizable: false,
     autoHideMenuBar: true,
@@ -1486,9 +1486,17 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nao ha janela aberta</span><br/>` })
           }
         }
-        else if (message.toLowerCase() == "$holditem") {
-          bot.swingArm("left", true)
-          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
+        else if (message.toLowerCase() == "$holditem ") {
+          const args = message.split(' ')
+          if (args[1] == "left"){  
+            bot.swingArm("left", true)
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
+          } else if (args[1] == "right"){
+            bot.swingArm("right", true)
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
+          } else {
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Use $holditem right ou $holditem left</span><br/>` })
+          }
         }
         else if (message.toLowerCase().startsWith("$setinventoryslot ")) {
           const slotarg = message.split(' ');
