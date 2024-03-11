@@ -5,13 +5,13 @@ let antiAfkDelay = {};
 module.exports = function (bot) {
   if (!global.listadecommandos.includes("$antiafk")) {
     global.listadecommandos.push("$antiafk");
-    global.Syntax += '<span style="color:white">- AntiAFK, Pula a cada 5 segundos por default (delay pode ser trocado)</span> <span style="color:orange">$antiafk [delay in MS]</span><br/>';
+    global.Syntax += '<span style="color:white">- AntiAFK, Pula a cada 5 segundos por default (delay pode ser trocado)</span> <span style="color:orange">$antiafk [delay]</span><br/>';
   }
 
   bot.commandChecks['antiafk'] = function (message) {
     if (message.startsWith('$')) {
       if (global.listadecommandos.some(cmd => message.toLowerCase().startsWith(cmd.toLowerCase()))) {
-        if (message.toLowerCase().startsWith("$antiafk ")) {
+        if (message.toLowerCase().startsWith("$antiafk")) {
           let delay = message.split(" ")[1]; // Obtém o delay após o comando $antiafk
           if (delay) {
             antiAfkDelay[bot.username] = parseInt(delay);
