@@ -123,17 +123,22 @@
       <input type="text" id="input-all" style="display: none;" placeholder="Insira sua mensagem" class="input">
     </div>
     <div id="bots">
-      <h2>Bots</h2>
+      <h2 id="bots-heading">Bots</h2>
     </div>
   </div>
   <script>
     const {
       ipcRenderer
     } = require('electron')
+
+    const divBots = document.getElementById('bots');
+    const divContagemBots = document.createElement('div');
+    divContagemBots.id = 'contagem-bots';
+    divBots.insertBefore(divContagemBots, divBots.firstChild);
+
     let botsConectadosHTML = [];
-    // Quando recebemos a lista de bots
+
     ipcRenderer.on('botsarraytohtml', (event, botsaarray) => {
-      // Agora você tem a lista de bots no arquivo HTML
       botsConectadosHTML = botsaarray;
     })
 
@@ -151,7 +156,6 @@
       if (input.value > 10000) {
         input.value = 10000;
       }
-      // Remove caracteres especiais
       input.value = input.value.replace(/[^0-9]/g, '');
     }
     document.getElementById('autoReconnect').addEventListener('change', function () {
@@ -187,15 +191,13 @@
         } : null
       })
       let proxyType = null;
-      if(document.getElementById('socks4').checked)
-      {
+      if (document.getElementById('socks4').checked) {
         proxyType = '4'
       }
-      else if(document.getElementById('socks5').checked)
-      {
+      else if (document.getElementById('socks5').checked) {
         proxyType = '5'
       }
-      else if(document.getElementById('httpproxy').checked){
+      else if (document.getElementById('httpproxy').checked) {
         proxyType = 'http'
       }
       for (let index = 0; index < usernames.length; index++) {
@@ -212,7 +214,7 @@
           proxyType
         })
         var delayBC = document.getElementById('delayBC').value;
-        await new Promise(resolve => setTimeout(resolve, delayBC)); // Espera por 1 segundo
+        await new Promise(resolve => setTimeout(resolve, delayBC));
       }
     })
     ipcRenderer.on('bot-connecting', (event, botUsername) => {
@@ -262,19 +264,61 @@
       delete botProxies[botUsername]
       delete botProxyTypes[botUsername]
     })*/
-    ipcRenderer.on('update-bot-status', (event, {
-      bot,
-      status
-    }) => {
-      const botStatusElement = document.getElementById(`${bot}-status`)
+
+    let botsConectados = 0;
+    let botsDesconectados = 0;
+    let botsConectando = 0;
+
+    let statusBots = {};
+
+    function atualizarContagemBots() {
+      const botsHeading = document.getElementById('bots-heading');
+      botsHeading.innerHTML = `Bots [✔️${botsConectados} | ❌${botsDesconectados} | ⌛${botsConectando} ]`;
+    }
+
+    atualizarContagemBots();
+
+    ipcRenderer.on('update-bot-status', (event, { bot, status }) => {
+      const botStatusElement = document.getElementById(`${bot}-status`);
+      const statusAnterior = statusBots[bot] || '';
+
       if (status === 'connected') {
-        botStatusElement.innerHTML = `${bot} ✔️`
+        botStatusElement.innerHTML = `${bot} ✔️`;
+        if (statusAnterior !== 'connected') {
+          botsConectados++;
+        }
+        if (statusAnterior === 'connecting') {
+          botsConectando--;
+        } else if (statusAnterior === 'disconnected') {
+          botsDesconectados--;
+        }
       } else if (status === 'disconnected') {
-        botStatusElement.innerHTML = `${bot} ❌`
+        botStatusElement.innerHTML = `${bot} ❌`;
+        if (statusAnterior !== 'disconnected') {
+          botsDesconectados++;
+        }
+        if (statusAnterior === 'connecting') {
+          botsConectando--;
+        } else if (statusAnterior === 'connected') {
+          botsConectados--;
+        }
       } else if (status === 'connecting') {
-        botStatusElement.innerHTML = `${bot} ⌛`
+        botStatusElement.innerHTML = `${bot} ⌛`;
+        if (statusAnterior !== 'connecting') {
+          botsConectando++;
+        }
+        if (statusAnterior === 'connected') {
+          botsConectados--;
+        } else if (statusAnterior === 'disconnected') {
+          botsDesconectados--;
+        }
       }
-    })
+
+      statusBots[bot] = status;
+      atualizarContagemBots();
+    });
+
+
     ipcRenderer.on('bot-message', (event, {
       bot,
       message
@@ -320,13 +364,24 @@
         if (botDiv) {
           botDiv.remove()
         }
+        const statusBot = statusBots[botUsername];
+        if (statusBot === 'connected') {
+          botsConectados--;
+        } else if (statusBot === 'disconnected') {
+          botsDesconectados--;
+        } else if (statusBot === 'connecting') {
+          botsConectando--;
+        }
+        delete statusBots[botUsername];
         delete botMessages[botUsername]
         delete botVersions[botUsername]
         delete botUsernames[botUsername]
         delete botProxies[botUsername]
         delete botProxyTypes[botUsername]
         ipcRenderer.send('remove-bot', botUsername)
-      } else if (event.target.id.endsWith('-reconnect-button')) {
+        atualizarContagemBots();
+      }
+      else if (event.target.id.endsWith('-reconnect-button')) {
         const botUsername = event.target.id.replace('-reconnect-button', '')
         const host = document.getElementById('host').value
         const version = botVersions[botUsername]
@@ -343,16 +398,22 @@
           inputDivAll.style.display = display
         }
       } else if (event.target.id === 'remove-all-button') {
-        // Remover todos os bots
-        // Obtenha todos os elementos div com a classe 'bot-div'
         const botDivs = document.querySelectorAll('.bot-div');
-        // Crie uma lista de nomes de bots a partir dos IDs dos divs
         const botNames = Array.from(botDivs).map(div => div.id);
         botNames.forEach(botUsername => {
           const botDiv = document.getElementById(botUsername)
           if (botDiv) {
             botDiv.remove()
           }
+          const statusBot = statusBots[botUsername];
+          if (statusBot === 'connected') {
+            botsConectados--;
+          } else if (statusBot === 'disconnected') {
+            botsDesconectados--;
+          } else if (statusBot === 'connecting') {
+            botsConectando--;
+          }
+          delete statusBots[botUsername];
           delete botMessages[botUsername]
           delete botVersions[botUsername]
           delete botUsernames[botUsername]
@@ -360,12 +421,10 @@
           delete botProxyTypes[botUsername]
           ipcRenderer.send('remove-bot', botUsername)
         })
+        atualizarContagemBots();
       }
       else if (event.target.id === 'remove-disconnected-button') {
-        // Remover todos os bots
-        // Obtenha todos os elementos div com a classe 'bot-div'
         const botDivs = document.querySelectorAll('.bot-div');
-        // Crie uma lista de nomes de bots a partir dos IDs dos divs
         const botNames = Array.from(botDivs).map(div => div.id);
         botNames.forEach(botUsername => {
           const botDiv = document.getElementById(botUsername)
@@ -383,13 +442,9 @@
           }
         })
       } else if (event.target.id === 'reconnect-disconnected-button') {
-        // Reconectar todos os bots
         const host = document.getElementById('host').value
-        // Obtenha todos os elementos div com a classe 'bot-div'
         const botDivs = document.querySelectorAll('.bot-div');
-        // Crie uma lista de nomes de bots a partir dos IDs dos divs
         const botNames = Array.from(botDivs).map(div => div.id);
-        //ipcRenderer.send('log', JSON.stringify(botNames)); // Envia botUsername para o processo de log
         botNames.forEach(botUsername => {
           const botStatusElement = document.getElementById(`${botUsername}-status`)
           if (botStatusElement.innerHTML.includes('❌')) {
@@ -401,13 +456,9 @@
           }
         })
       } else if (event.target.id === 'reconnect-all-button') {
-        // Reconectar todos os bots
         const host = document.getElementById('host').value
-        // Obtenha todos os elementos div com a classe 'bot-div'
         const botDivs = document.querySelectorAll('.bot-div');
-        // Crie uma lista de nomes de bots a partir dos IDs dos divs
         const botNames = Array.from(botDivs).map(div => div.id);
-        //ipcRenderer.send('log', JSON.stringify(botNames)); // Envia botUsername para o processo de log
         botNames.forEach(botUsername => {
           const version = botVersions[botUsername]
           const username = botUsername // Use botUsername diretamente
@@ -430,9 +481,7 @@
             event.target.value = ''
           }
           else {
-            // Enviar a mesma mensagem para todos os bots
             botsConectadosHTML.forEach(botUsername => {
-              //ipcRenderer.send('log', botUsername); // Envia botUsername para o processo de // log
               ipcRenderer.send('send-message', {
                 botUsername,
                 message
@@ -449,7 +498,6 @@
         const botUsername = event.target.id.split('-')[0]
         const botStatusElement = document.getElementById(`${botUsername}-status`)
         if (botStatusElement.innerHTML.includes('❌')) {
-          // Se o bot estiver desconectado, não permita que o usuário envie mensagens
           return
         }
         const message = event.target.value
@@ -462,7 +510,6 @@
         ipcRenderer.send('ready-for-bots')
         event.preventDefault()
         const message = event.target.value
-        // Enviar a mesma mensagem para todos os bots
         botsConectadosHTML.forEach(botUsername => {
           ipcRenderer.send('send-message', {
             botUsername,

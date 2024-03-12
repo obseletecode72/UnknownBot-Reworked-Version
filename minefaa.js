@@ -1516,8 +1516,11 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Comando Inexistente</span><br><br/>" + global.Syntax })
         }
         else if (message.toLowerCase().startsWith("$clickentity")) {
-          const playerFilter = (entity) => !botsConectado.includes(entity.username);
+          const playerFilter = (entity) => (!botsConectado.includes(entity.username) && entity.displayName !== 'Armor Stand');
           const entity = bot.nearestEntity(playerFilter);
+
+          console.log(entity);
+
           if (entity) {
             bot.lookAt(entity.position.offset(0, entity.height, 0));
             bot.attack(entity)
