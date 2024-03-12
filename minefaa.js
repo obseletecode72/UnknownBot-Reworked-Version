@@ -804,6 +804,20 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
         req.on('error', (err) => {
           console.log(err);
+          const indexConectado = botsConectado.indexOf(username);
+          if (indexConectado > -1) {
+            botsConectado.splice(indexConectado, 1);
+          }
+
+          const indexArray = botsaarray.indexOf(bot);
+          if (indexArray > -1) {
+            botsaarray.splice(indexArray, 1);
+          }
+
+          global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+
+          global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+          global.mainWindow.webContents.send('bot-disconnected', username)
         })
       },
       agent: new ProxyAgent({ protocol: 'http', host: proxy.ip, port: proxy.port }),
@@ -839,6 +853,20 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
         req.on('error', (err) => {
           console.log(err);
+          const indexConectado = botsConectado.indexOf(username);
+          if (indexConectado > -1) {
+            botsConectado.splice(indexConectado, 1);
+          }
+
+          const indexArray = botsaarray.indexOf(bot);
+          if (indexArray > -1) {
+            botsaarray.splice(indexArray, 1);
+          }
+
+          global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+
+          global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+          global.mainWindow.webContents.send('bot-disconnected', username)
         })
       },
       agent: new ProxyAgent({
@@ -880,6 +908,20 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
         req.on('error', (err) => {
           console.log(err);
+          const indexConectado = botsConectado.indexOf(username);
+          if (indexConectado > -1) {
+            botsConectado.splice(indexConectado, 1);
+          }
+
+          const indexArray = botsaarray.indexOf(bot);
+          if (indexArray > -1) {
+            botsaarray.splice(indexArray, 1);
+          }
+
+          global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+
+          global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+          global.mainWindow.webContents.send('bot-disconnected', username)
         })
       },
       agent: new ProxyAgent({
@@ -943,7 +985,6 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     console.log("connecting")
     //}
   })
-
   bot.on('login', () => {
     if (!botsConectado.includes(username)) {
       botsConectado.push(username);
@@ -971,6 +1012,8 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   });
 
   bot.on('end', async () => {
+    console.log("deleted")
+    
     const indexConectado = botsConectado.indexOf(username);
     if (indexConectado > -1) {
       botsConectado.splice(indexConectado, 1);
@@ -1025,8 +1068,6 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
         ipcMain.emit('connect-bot', null, { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType });
       }
     }
-
-    console.log("deleted")
   })
 
   bot._client.on('map', ({ data }) => {
@@ -1081,7 +1122,6 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   })
 
   bot.on('kicked', (reason) => {
-    console.log(reason)
     let reasonObj;
     if (typeof reason === 'string') {
       reasonObj = JSON.parse(reason);
@@ -1153,6 +1193,21 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
     // Send the HTML message to the web contents
     global.mainWindow.webContents.send('bot-message', { bot: username, message: htmlMessage });
+
+    const indexConectado = botsConectado.indexOf(username);
+    if (indexConectado > -1) {
+      botsConectado.splice(indexConectado, 1);
+    }
+
+    const indexArray = botsaarray.indexOf(bot);
+    if (indexArray > -1) {
+      botsaarray.splice(indexArray, 1);
+    }
+
+    global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+
+    global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+    global.mainWindow.webContents.send('bot-disconnected', username)
   });
 
   /* // debug things
@@ -1201,17 +1256,6 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   bots[bot.username] = bot
   botsa = bot
 })
-
-ipcMain.on('messagewasclicable', (event, botUsername, command) => {
-  const botsaarrayCopy = [...botsaarray]; // Create a copy of botsaarray
-  botsaarrayCopy.forEach((bot) => {
-    if (bot.username == botUsername) {
-      console.log("Extracted Command: " + command)
-      bot.chat(command);
-      global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" })
-    }
-  })
-});
 
 ipcMain.on('captcha-input-janela1', (event, botUsername, captchaInput) => {
   const botsaarrayCopy = [...botsaarray]; // Create a copy of botsaarray
@@ -1820,12 +1864,11 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
 
 let botsSemAutoReconnect = []; // Nova lista
 
-// Quando um bot é removido
 ipcMain.on('remove-bot', (event, botUsername) => {
+  botsSemAutoReconnect.push(botUsername); // Adicione o bot à lista
   const botsaarrayCopy = [...botsaarray];
   botsaarrayCopy.forEach((bot) => {
     if (bot.username == botUsername) {
-      botsSemAutoReconnect.push(botUsername); // Adicione o bot à lista
       bot.end();
       const botsaIndex = botsaarray.indexOf(bot);
       if (botsaIndex > -1) {
