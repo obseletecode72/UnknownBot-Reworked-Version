@@ -3,6 +3,7 @@ let count = {};
 let intervalId = {};
 let commands = [];
 let autologinfileexists = false;
+let usernames = {};
 
 if (!fs.existsSync('./plugins/auto-login.txt')) {
   console.error('Arquivo auto-login.txt não encontrado.');
@@ -22,6 +23,7 @@ if (!fs.existsSync('./plugins/auto-login.txt')) {
 
 module.exports = function (bot) {
   bot.on('spawn', function () {
+    usernames[bot.username] = bot.username;
     if (intervalId[bot.username] || !autologinfileexists) return;
 
     count[bot.username] = 0;
@@ -45,8 +47,7 @@ module.exports = function (bot) {
     }, 3000);
   });
 
-  bot.on('end', function ()
-  {
-    clearInterval(intervalId[bot.username]);
+  bot.on('end', function () {
+    clearInterval(intervalId[usernames[bot.username]]);
   })
 };
