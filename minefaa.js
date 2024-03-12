@@ -59,7 +59,7 @@ global.Syntax = `
 <span style="color:white">- ListSlots, Mostra a quantidade de slots total da janela aberta:</span> <span style="color:orange">$listslots</span><br/>
 <span style="color:white">- DropAll, Dropa todos itens do inventario:</span> <span style="color:orange">$dropall</span><br/>
 <span style="color:white">- InventoryInterface, Mostra seu inventario em outra janela:</span> <span style="color:orange">$inventoryinterface</span><br/>
-<span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem</span><br/>
+<span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem [right,left]</span><br/>
 <span style="color:white">- ClickEntity, Clica o botao direito e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
 <span style="color:white">- Move, Faz o bot se mover por um tempo determinado. (As direções podem ser combinadas com o caractere "|":</span> <span style="color:orange">$move [direções jump,forward,back,left,right,sneak,sprint] [duração em ticks]
 </span><br/>
@@ -1502,17 +1502,13 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
           }
         }
         else if (message.toLowerCase() == "$holditem") {
-          (async () =>
-          {
-            await bot.activateItem();
+          bot.activateItem();
+          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
 
-            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item clicado!</span><br/>` })
-
-            if(bot.usingHeldItem)
-            {
-              global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item usavel, parando de clicar!</span><br/>` })
-            }
-          })
+          if (bot.usingHeldItem) {
+            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:green'>Item usavel, parando de clicar!</span><br/>` })
+            bot.deactivateItem();
+          }
         }
         else if (message.toLowerCase().startsWith("$setinventoryslot ")) {
           const slotarg = message.split(' ');
