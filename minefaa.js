@@ -1501,7 +1501,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
             global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:red'>Nao ha janela aberta</span><br/>` })
           }
         }
-        else if (message.toLowerCase() == "$holditem ") {
+        else if (message.toLowerCase().startsWith("$holditem ")) {
           const args = message.split(' ')
           if (args[1] == "left"){  
             bot.swingArm("left", true)
