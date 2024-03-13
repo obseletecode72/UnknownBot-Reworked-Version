@@ -521,29 +521,47 @@
         })
         event.target.value = ''
       } else if (event.key === 'Enter' && event.target.id === 'input-all') {
-        ipcRenderer.send('ready-for-bots')
-        event.preventDefault()
-        const message = event.target.value
-        botsConectadosHTML.forEach(botUsername => {
-          ipcRenderer.send('send-message', {
-            botUsername,
-            message
-          });
-        });
-        event.target.value = ''
-      } else if (event.ctrlKey && event.shiftKey && event.key === 'G') {
-        let textarea = document.getElementById('usernames');
-        for (let i = 0; i < 5; i++) {
-          textarea.value += generateRandomString(15) + '\n';
-        }
-        updateUsernameCount();
-      }
+  ipcRenderer.send('ready-for-bots');
+  event.preventDefault();
+  const message = event.target.value;
+  botsConectadosHTML.forEach(botUsername => {
+    ipcRenderer.send('send-message', {
+      botUsername,
+      message
+    });
+  });
+  event.target.value = '';
+} else if (event.ctrlKey && event.shiftKey && event.key === 'F') {
+  // Handle Ctrl+Shift+F for generating random string
+  let textarea = document.getElementById('usernames');
+  for (let i = 0; i < 5; i++) {
+    textarea.value += generateRandomStringWithPrefix(5) + '\n';
+  }
+  updateUsernameCount();
+} else if (event.ctrlKey && event.shiftKey && event.key === 'G') {
+  // Optional: Handle Ctrl+Shift+G for generating multiple strings (as in Response B)
+  let textarea = document.getElementById('usernames');
+  for (let i = 0; i < 5; i++) {
+    textarea.value += generateRandomString(15) + '\n';
+  }
+  updateUsernameCount();
+}
+
     })
     document.getElementById('usernames').addEventListener('input', updateUsernameCount);
     document.getElementById('proxies').addEventListener('input', updateProxyCount);
 
     function generateRandomString(length) {
       let result = '';
+      let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return result;
+    }
+
+    function generateRandomStringWithPrefix(length) {
+      let result = 'unknownbot_';
       let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       for (let i = 0; i < length; i++) {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
