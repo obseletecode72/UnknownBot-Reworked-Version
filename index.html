@@ -15,6 +15,9 @@
       <br>
       <input type="text" id="host" value="localhost" name="host">
       <br>
+      <label for="usernameprefix">Username Prefix:</label>
+      <br>
+      <input type="text" id="usernameprefix" value="" name="usernameprefix">
       <br>
       <label for="usernames">Usernames: <span id="usernameCount"></span>
       </label>
@@ -309,6 +312,55 @@
       }
     }
 
+    async function removeDisconnectedBots(botNames, delay) {
+      for (const botUsername of botNames) {
+        const botDiv = document.getElementById(botUsername)
+        const botStatusElement = document.getElementById(`${botUsername}-status`)
+        if (botStatusElement.innerHTML.includes('❌')) {
+          if (botDiv) {
+            botDiv.remove()
+          }
+          if (statusBots[botUsername] === 'disconnected') {
+            botsDesconectados--;
+          }
+          delete statusBots[botUsername];
+          delete botMessages[botUsername]
+          delete botVersions[botUsername]
+          delete botUsernames[botUsername]
+          delete botProxies[botUsername]
+          delete botProxyTypes[botUsername]
+          ipcRenderer.send('remove-bot', botUsername)
+          await new Promise(resolve => setTimeout(resolve, delay));
+          atualizarContagemBots();
+        }
+      }
+    }
+
+    async function reconnectDisconnectedBots(botNames, host, delay) {
+      for (const botUsername of botNames) {
+        const botStatusElement = document.getElementById(`${botUsername}-status`)
+        if (botStatusElement.innerHTML.includes('❌')) {
+          const version = botVersions[botUsername]
+          const username = botUsername // Use botUsername diretamente
+          const proxy = botProxies[botUsername]
+          const proxyType = botProxyTypes[botUsername]
+          ipcRenderer.send('reco-bot', host, botUsername, version, username, proxy, proxyType)
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    async function reconnectAllButton(botNames, host, delay) {
+      for (const botUsername of botNames) {
+        const version = botVersions[botUsername]
+        const username = botUsername // Use botUsername diretamente
+        const proxy = botProxies[botUsername]
+        const proxyType = botProxyTypes[botUsername]
+        ipcRenderer.send('reco-bot', host, botUsername, version, username, proxy, proxyType)
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
     atualizarContagemBots();
 
     ipcRenderer.on('update-bot-status', async (event, { bot, status }) => {
@@ -430,59 +482,28 @@
         const botDivs = document.querySelectorAll('.bot-div');
         const botNames = Array.from(botDivs).map(div => div.id);
         removeBots(botNames, 1);
+        atualizarContagemBots();
       }
       else if (event.target.id === 'remove-disconnected-button') {
         const botDivs = document.querySelectorAll('.bot-div');
         const botNames = Array.from(botDivs).map(div => div.id);
-        botNames.forEach(botUsername => {
-          const botDiv = document.getElementById(botUsername)
-          const botStatusElement = document.getElementById(`${botUsername}-status`)
-          if (botStatusElement.innerHTML.includes('❌')) {
-            if (botDiv) {
-              botDiv.remove()
-            }
-            if (statusBots[botUsername] === 'disconnected') {
-              botsDesconectados--;
-            }
-            delete statusBots[botUsername];
-            delete botMessages[botUsername]
-            delete botVersions[botUsername]
-            delete botUsernames[botUsername]
-            delete botProxies[botUsername]
-            delete botProxyTypes[botUsername]
-            ipcRenderer.send('remove-bot', botUsername)
-          }
-        })
+
+        removeDisconnectedBots(botNames, 1);
         atualizarContagemBots();
       }
       else if (event.target.id === 'reconnect-disconnected-button') {
         const host = document.getElementById('host').value
         const botDivs = document.querySelectorAll('.bot-div');
         const botNames = Array.from(botDivs).map(div => div.id);
-        botNames.forEach(botUsername => {
-          const botStatusElement = document.getElementById(`${botUsername}-status`)
-          if (botStatusElement.innerHTML.includes('❌')) {
-            const version = botVersions[botUsername]
-            const username = botUsername // Use botUsername diretamente
-            const proxy = botProxies[botUsername]
-            const proxyType = botProxyTypes[botUsername]
-            ipcRenderer.send('reco-bot', host, botUsername, version, username, proxy, proxyType)
-          }
-        })
+        reconnectDisconnectedBots(botNames, host, 1);
       } else if (event.target.id === 'reconnect-all-button') {
         const host = document.getElementById('host').value
         const botDivs = document.querySelectorAll('.bot-div');
         const botNames = Array.from(botDivs).map(div => div.id);
-        botNames.forEach(botUsername => {
-          const version = botVersions[botUsername]
-          const username = botUsername // Use botUsername diretamente
-          const proxy = botProxies[botUsername]
-          const proxyType = botProxyTypes[botUsername]
-          ipcRenderer.send('reco-bot', host, botUsername, version, username, proxy, proxyType)
-        })
+        reconnectAllButton(botNames, host, 1);
       };
     })
-    document.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', async (event) => { // Adicione 'async' aqui
       if (event.key === 'Enter') {
         if (event.target.id === 'input-all') {
           ipcRenderer.send('ready-for-bots')
@@ -495,17 +516,19 @@
             event.target.value = ''
           }
           else {
-            botsConectadosHTML.forEach(botUsername => {
+            for (const botUsername of botsConectadosHTML) { // Altere 'forEach' para 'for...of'
               ipcRenderer.send('send-message', {
                 botUsername,
                 message
               });
-            });
+              await new Promise(resolve => setTimeout(resolve, delayBC)); // Coloque o 'await' aqui
+            }
             event.target.value = ''
           }
         }
       }
     })
+
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && event.target.className === 'input') {
         event.preventDefault()
@@ -521,31 +544,31 @@
         })
         event.target.value = ''
       } else if (event.key === 'Enter' && event.target.id === 'input-all') {
-  ipcRenderer.send('ready-for-bots');
-  event.preventDefault();
-  const message = event.target.value;
-  botsConectadosHTML.forEach(botUsername => {
-    ipcRenderer.send('send-message', {
-      botUsername,
-      message
-    });
-  });
-  event.target.value = '';
-} else if (event.ctrlKey && event.shiftKey && event.key === 'F') {
-  // Handle Ctrl+Shift+F for generating random string
-  let textarea = document.getElementById('usernames');
-  for (let i = 0; i < 5; i++) {
-    textarea.value += generateRandomStringWithPrefix(5) + '\n';
-  }
-  updateUsernameCount();
-} else if (event.ctrlKey && event.shiftKey && event.key === 'G') {
-  // Optional: Handle Ctrl+Shift+G for generating multiple strings (as in Response B)
-  let textarea = document.getElementById('usernames');
-  for (let i = 0; i < 5; i++) {
-    textarea.value += generateRandomString(15) + '\n';
-  }
-  updateUsernameCount();
-}
+        ipcRenderer.send('ready-for-bots');
+        event.preventDefault();
+        const message = event.target.value;
+        botsConectadosHTML.forEach(botUsername => {
+          ipcRenderer.send('send-message', {
+            botUsername,
+            message
+          });
+        });
+        event.target.value = '';
+      } else if (event.ctrlKey && event.shiftKey && event.key === 'F') {
+        // Handle Ctrl+Shift+F for generating random string
+        let textarea = document.getElementById('usernames');
+        for (let i = 0; i < 5; i++) {
+          textarea.value += generateRandomStringWithPrefix(5) + '\n';
+        }
+        updateUsernameCount();
+      } else if (event.ctrlKey && event.shiftKey && event.key === 'G') {
+        // Optional: Handle Ctrl+Shift+G for generating multiple strings (as in Response B)
+        let textarea = document.getElementById('usernames');
+        for (let i = 0; i < 5; i++) {
+          textarea.value += generateRandomString(15) + '\n';
+        }
+        updateUsernameCount();
+      }
 
     })
     document.getElementById('usernames').addEventListener('input', updateUsernameCount);
@@ -561,7 +584,15 @@
     }
 
     function generateRandomStringWithPrefix(length) {
-      let result = 'unknownbot_';
+      // Obtenha o valor do campo de entrada
+      let prefix = document.getElementById('usernameprefix').value;
+
+      // Se o campo de entrada estiver vazio, use 'unknownbot_' como padrão
+      if (!prefix) {
+        prefix = 'unknownbot_';
+      }
+
+      let result = prefix;
       let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       for (let i = 0; i < length; i++) {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
