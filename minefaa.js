@@ -739,8 +739,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
             host: proxy.ip,
             port: parseInt(proxy.port),
             type: parseInt(proxyType),
-            userId: proxy.user,
-            password: ''
+            userId: proxy.user
           },
           command: 'connect',
           destination: {

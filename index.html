@@ -188,8 +188,14 @@
         const parts = proxy.split(':')
         const ip = parts[0]
         const port = parseInt(parts[1])
-        const user = parts.slice(2, -1).join(':') // junta todas as partes exceto a última
-        const password = parts[parts.length - 1] // a última parte é a senha
+        let user = ''
+        let password = ''
+        if (parts.length === 3) {
+          user = parts[2]
+        } else if (parts.length > 3) {
+          user = parts.slice(2, -1).join(':')
+          password = parts[parts.length - 1]
+        }
         return ip && port ? {
           ip,
           port,
