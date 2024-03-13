@@ -671,17 +671,26 @@ ipcMain.on('send-message-all', (event, message) => {
 let botsaarray = []
 let placedBlocks = new Set();
 
+const ipPortRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]+$/;
+let record = {};
+
 ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyType }) => {
-  console.log(version)
   if (botsConectado.includes(username)) return
 
   let bot;
   if (proxy && proxy.ip && proxy.port && !proxy.user && !proxy.password && (proxyType === '4' || proxyType === '5')) {
-    console.log("proxy, no pass, no user, type: " + proxyType)
-    const record = await getSRVRecord(host);
-    if (!record) {
-      console.log('SRV Record nao encontrado, bot anulado... ');
-      return;
+    console.log("proxy, no pass, no user, type: " + proxyType);
+    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+    if (ipPortRegex.test(host)) {
+      const [ip, port] = host.split(':');
+      record.ip = ip;
+      record.port = parseInt(port);
+    } else {
+      record = await getSRVRecord(host);
+      if (!record) {
+        console.log('SRV Record nao encontrado, bot anulado... ');
+        return;
+      }
     }
     bot = mineflayer.createBot({
       connect: (client) => {
@@ -711,10 +720,17 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   }
   else if (proxy && proxy.ip && proxy.port && proxy.user && !proxy.password && (proxyType === '4' || proxyType === '5')) {
     console.log("proxy, no pass, type: " + proxyType)
-    const record = await getSRVRecord(host);
-    if (!record) {
-      console.log('SRV Record nao encontrado, bot anulado... ');
-      return;
+    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+    if (ipPortRegex.test(host)) {
+      const [ip, port] = host.split(':');
+      record.ip = ip;
+      record.port = parseInt(port);
+    } else {
+      record = await getSRVRecord(host);
+      if (!record) {
+        console.log('SRV Record nao encontrado, bot anulado... ');
+        return;
+      }
     }
     bot = mineflayer.createBot({
       connect: (client) => {
@@ -746,10 +762,17 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   }
   else if (proxy && proxy.ip && proxy.port && proxy.user && proxy.password && (proxyType === '4' || proxyType === '5')) {
     console.log("proxy, type: " + proxyType)
-    const record = await getSRVRecord(host);
-    if (!record) {
-      console.log('SRV Record nao encontrado, bot anulado... ');
-      return;
+    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+    if (ipPortRegex.test(host)) {
+      const [ip, port] = host.split(':');
+      record.ip = ip;
+      record.port = parseInt(port);
+    } else {
+      record = await getSRVRecord(host);
+      if (!record) {
+        console.log('SRV Record nao encontrado, bot anulado... ');
+        return;
+      }
     }
     bot = mineflayer.createBot({
       connect: (client) => {
@@ -781,17 +804,24 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   }
   else if (proxy && proxy.ip && proxy.port && !proxy.user && !proxy.password && (proxyType === 'http')) {
     console.log("proxy, no pass, no user, type: " + proxyType)
-    const record = await getSRVRecord(host);
-    if (!record) {
-      console.log('SRV Record nao encontrado, bot anulado... ');
-      return;
+    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+    if (ipPortRegex.test(host)) {
+      const [ip, port] = host.split(':');
+      record.ip = ip;
+      record.port = parseInt(port);
+    } else {
+      record = await getSRVRecord(host);
+      if (!record) {
+        console.log('SRV Record nao encontrado, bot anulado... ');
+        return;
+      }
     }
 
     bot = mineflayer.createBot({
       connect: (client) => {
         const req = Http.request({
           host: proxy.ip,
-          port: proxy.port,
+          port: parseInt(proxy.port),
           method: 'CONNECT',
           path: record.ip + ':' + parseInt(record.port)
         })
@@ -827,10 +857,17 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   }
   else if (proxy && proxy.ip && proxy.port && proxy.user && !proxy.password && (proxyType === 'http')) {
     console.log("proxy, no pass, type: " + proxyType)
-    const record = await getSRVRecord(host);
-    if (!record) {
-      console.log('SRV Record nao encontrado, bot anulado... ');
-      return;
+    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+    if (ipPortRegex.test(host)) {
+      const [ip, port] = host.split(':');
+      record.ip = ip;
+      record.port = parseInt(port);
+    } else {
+      record = await getSRVRecord(host);
+      if (!record) {
+        console.log('SRV Record nao encontrado, bot anulado... ');
+        return;
+      }
     }
 
     bot = mineflayer.createBot({
@@ -882,10 +919,17 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   }
   else if (proxy && proxy.ip && proxy.port && proxy.user && proxy.password && (proxyType === 'http')) {
     console.log("proxy, type: " + proxyType)
-    const record = await getSRVRecord(host);
-    if (!record) {
-      console.log('SRV Record nao encontrado, bot anulado... ');
-      return;
+    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+    if (ipPortRegex.test(host)) {
+      const [ip, port] = host.split(':');
+      record.ip = ip;
+      record.port = parseInt(port);
+    } else {
+      record = await getSRVRecord(host);
+      if (!record) {
+        console.log('SRV Record nao encontrado, bot anulado... ');
+        return;
+      }
     }
 
     bot = mineflayer.createBot({
@@ -936,6 +980,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
   }
   else {
+    console.log("bot without proxy")
     bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
   }
 
@@ -1013,7 +1058,7 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
   bot.on('end', async () => {
     console.log("deleted")
-    
+
     const indexConectado = botsConectado.indexOf(username);
     if (indexConectado > -1) {
       botsConectado.splice(indexConectado, 1);
@@ -1863,11 +1908,13 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
       }
     }
   })
+  
+  await sleep(1);
 })
 
 let botsSemAutoReconnect = []; // Nova lista
 
-ipcMain.on('remove-bot', (event, botUsername) => {
+ipcMain.on('remove-bot', async (event, botUsername) => {
   botsSemAutoReconnect.push(botUsername); // Adicione o bot à lista
   const botsaarrayCopy = [...botsaarray];
   botsaarrayCopy.forEach((bot) => {
@@ -1879,6 +1926,8 @@ ipcMain.on('remove-bot', (event, botUsername) => {
       }
     }
   });
+
+  await sleep(1);
 });
 
 ipcMain.on('reco-bot', async (event, host, username, version, proxy, proxyType) => {
@@ -1886,6 +1935,7 @@ ipcMain.on('reco-bot', async (event, host, username, version, proxy, proxyType) 
 
   if (!botExists) {
     ipcMain.emit('connect-bot', null, { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType });
+    await sleep(1);
   } else {
     const botsaarrayCopy = [...botsaarray];
     botsaarrayCopy.forEach(async (bot) => {
