@@ -679,308 +679,314 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
   if (botsConectado.includes(username)) return
 
   let bot;
-  if (proxy && proxy.ip && proxy.port && !proxy.user && !proxy.password && (proxyType === '4' || proxyType === '5')) {
-    console.log("proxy, no pass, no user, type: " + proxyType);
-    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
-    if (ipPortRegex.test(host)) {
-      const [ip, port] = host.split(':');
-      record.ip = ip;
-      record.port = parseInt(port);
-    } else {
-      record = await getSRVRecord(host);
-      if (!record) {
-        console.log('SRV Record nao encontrado, bot anulado... ');
-        return;
-      }
-    }
-    bot = mineflayer.createBot({
-      connect: (client) => {
-        Socks.createConnection({
-          proxy: {
-            host: proxy.ip,
-            port: parseInt(proxy.port),
-            type: parseInt(proxyType)
+
+  if (proxy && proxy.ip && proxy.port) {
+    let user = proxy.user || '';
+    let password = proxy.password || '';
+
+    if ((proxyType === '4' || proxyType === '5')) {
+      if (!user && !password) {
+        console.log("proxy, no pass, no user, type: " + proxyType);
+        console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+        if (ipPortRegex.test(host)) {
+          const [ip, port] = host.split(':');
+          record.ip = ip;
+          record.port = parseInt(port);
+        } else {
+          record = await getSRVRecord(host);
+          if (!record) {
+            console.log('SRV Record nao encontrado, bot anulado... ');
+            return;
+          }
+        }
+        bot = mineflayer.createBot({
+          connect: (client) => {
+            Socks.createConnection({
+              proxy: {
+                host: proxy.ip,
+                port: parseInt(proxy.port),
+                type: parseInt(proxyType)
+              },
+              command: 'connect',
+              destination: {
+                host: record ? record.ip : host,
+                port: record ? record.port : 25565
+              }
+            }, (err, info) => {
+              if (err) {
+                console.log(err)
+                return
+              }
+              client.setSocket(info.socket)
+              client.emit('connect')
+            })
           },
-          command: 'connect',
-          destination: {
-            host: record ? record.ip : host,
-            port: record ? record.port : 25565
+          username: username,
+          version: version
+        });
+      } else if (user && !password) {
+        console.log("proxy, no pass, type: " + proxyType)
+        console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+        if (ipPortRegex.test(host)) {
+          const [ip, port] = host.split(':');
+          record.ip = ip;
+          record.port = parseInt(port);
+        } else {
+          record = await getSRVRecord(host);
+          if (!record) {
+            console.log('SRV Record nao encontrado, bot anulado... ');
+            return;
           }
-        }, (err, info) => {
-          if (err) {
-            console.log(err)
-            return
-          }
-          client.setSocket(info.socket)
-          client.emit('connect')
-        })
-      },
-      username: username,
-      version: version
-    });
-  }
-  else if (proxy && proxy.ip && proxy.port && proxy.user && !proxy.password && (proxyType === '4' || proxyType === '5')) {
-    console.log("proxy, no pass, type: " + proxyType)
-    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
-    if (ipPortRegex.test(host)) {
-      const [ip, port] = host.split(':');
-      record.ip = ip;
-      record.port = parseInt(port);
-    } else {
-      record = await getSRVRecord(host);
-      if (!record) {
-        console.log('SRV Record nao encontrado, bot anulado... ');
-        return;
-      }
-    }
-    bot = mineflayer.createBot({
-      connect: (client) => {
-        Socks.createConnection({
-          proxy: {
-            host: proxy.ip,
-            port: parseInt(proxy.port),
-            type: parseInt(proxyType),
-            userId: proxy.user,
-            password: ''
+        }
+        bot = mineflayer.createBot({
+          connect: (client) => {
+            Socks.createConnection({
+              proxy: {
+                host: proxy.ip,
+                port: parseInt(proxy.port),
+                type: parseInt(proxyType),
+                userId: proxy.user
+              },
+              command: 'connect',
+              destination: {
+                host: record ? record.ip : host,
+                port: record ? record.port : 25565
+              }
+            }, (err, info) => {
+              if (err) {
+                console.log(err)
+                return
+              }
+              client.setSocket(info.socket)
+              client.emit('connect')
+            })
           },
-          command: 'connect',
-          destination: {
-            host: record ? record.ip : host,
-            port: record ? record.port : 25565
+          username: username,
+          version: version
+        });
+      } else if (user && password) {
+        console.log("proxy, type: " + proxyType)
+        console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+        if (ipPortRegex.test(host)) {
+          const [ip, port] = host.split(':');
+          record.ip = ip;
+          record.port = parseInt(port);
+        } else {
+          record = await getSRVRecord(host);
+          if (!record) {
+            console.log('SRV Record nao encontrado, bot anulado... ');
+            return;
           }
-        }, (err, info) => {
-          if (err) {
-            console.log(err)
-            return
-          }
-          client.setSocket(info.socket)
-          client.emit('connect')
-        })
-      },
-      username: username,
-      version: version
-    });
-  }
-  else if (proxy && proxy.ip && proxy.port && proxy.user && proxy.password && (proxyType === '4' || proxyType === '5')) {
-    console.log("proxy, type: " + proxyType)
-    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
-    if (ipPortRegex.test(host)) {
-      const [ip, port] = host.split(':');
-      record.ip = ip;
-      record.port = parseInt(port);
-    } else {
-      record = await getSRVRecord(host);
-      if (!record) {
-        console.log('SRV Record nao encontrado, bot anulado... ');
-        return;
-      }
-    }
-    bot = mineflayer.createBot({
-      connect: (client) => {
-        Socks.createConnection({
-          proxy: {
-            host: proxy.ip,
-            port: parseInt(proxy.port),
-            type: parseInt(proxyType),
-            userId: proxy.user,
-            password: proxy.password
+        }
+        bot = mineflayer.createBot({
+          connect: (client) => {
+            Socks.createConnection({
+              proxy: {
+                host: proxy.ip,
+                port: parseInt(proxy.port),
+                type: parseInt(proxyType),
+                userId: proxy.user,
+                password: proxy.password
+              },
+              command: 'connect',
+              destination: {
+                host: record ? record.ip : host,
+                port: record ? record.port : 25565
+              }
+            }, (err, info) => {
+              if (err) {
+                console.log(err)
+                return
+              }
+              client.setSocket(info.socket)
+              client.emit('connect')
+            })
           },
-          command: 'connect',
-          destination: {
-            host: record ? record.ip : host,
-            port: record ? record.port : 25565
+          username: username,
+          version: version
+        });
+      }
+    } else if (proxyType === 'http') {
+      if (!user && !password) {
+        console.log("proxy, no pass, no user, type: " + proxyType)
+        console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+        if (ipPortRegex.test(host)) {
+          const [ip, port] = host.split(':');
+          record.ip = ip;
+          record.port = parseInt(port);
+        } else {
+          record = await getSRVRecord(host);
+          if (!record) {
+            console.log('SRV Record nao encontrado, bot anulado... ');
+            return;
           }
-        }, (err, info) => {
-          if (err) {
-            console.log(err)
-            return
-          }
-          client.setSocket(info.socket)
-          client.emit('connect')
+        }
+
+        bot = mineflayer.createBot({
+          connect: (client) => {
+            const req = Http.request({
+              host: proxy.ip,
+              port: parseInt(proxy.port),
+              method: 'CONNECT',
+              path: record.ip + ':' + parseInt(record.port)
+            })
+            req.end()
+
+            req.on('connect', (res, stream) => {
+              client.setSocket(stream)
+              client.emit('connect')
+            })
+
+            req.on('error', (err) => {
+              console.log(err);
+              const indexConectado = botsConectado.indexOf(username);
+              if (indexConectado > -1) {
+                botsConectado.splice(indexConectado, 1);
+              }
+
+              const indexArray = botsaarray.indexOf(bot);
+              if (indexArray > -1) {
+                botsaarray.splice(indexArray, 1);
+              }
+
+              global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+
+              global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+              global.mainWindow.webContents.send('bot-disconnected', username)
+            })
+          },
+          agent: new ProxyAgent({ protocol: 'http', host: proxy.ip, port: proxy.port }),
+          username: username,
+          version: version
         })
-      },
-      username: username,
-      version: version
-    });
-  }
-  else if (proxy && proxy.ip && proxy.port && !proxy.user && !proxy.password && (proxyType === 'http')) {
-    console.log("proxy, no pass, no user, type: " + proxyType)
-    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
-    if (ipPortRegex.test(host)) {
-      const [ip, port] = host.split(':');
-      record.ip = ip;
-      record.port = parseInt(port);
-    } else {
-      record = await getSRVRecord(host);
-      if (!record) {
-        console.log('SRV Record nao encontrado, bot anulado... ');
-        return;
+      } else if (user && !password) {
+        console.log("proxy, no pass, type: " + proxyType)
+        console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+        if (ipPortRegex.test(host)) {
+          const [ip, port] = host.split(':');
+          record.ip = ip;
+          record.port = parseInt(port);
+        } else {
+          record = await getSRVRecord(host);
+          if (!record) {
+            console.log('SRV Record nao encontrado, bot anulado... ');
+            return;
+          }
+        }
+
+        bot = mineflayer.createBot({
+          connect: (client) => {
+            const req = Http.request({
+              host: proxy.ip,
+              port: proxy.port,
+              method: 'CONNECT',
+              path: record.ip + ':' + parseInt(record.port),
+              headers: {
+                'Proxy-Authorization': 'Basic ' + Buffer.from(proxy.user).toString('base64')
+              }
+            })
+            req.end()
+
+            req.on('connect', (res, stream) => {
+              client.setSocket(stream)
+              client.emit('connect')
+            })
+
+            req.on('error', (err) => {
+              console.log(err);
+              const indexConectado = botsConectado.indexOf(username);
+              if (indexConectado > -1) {
+                botsConectado.splice(indexConectado, 1);
+              }
+
+              const indexArray = botsaarray.indexOf(bot);
+              if (indexArray > -1) {
+                botsaarray.splice(indexArray, 1);
+              }
+
+              global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+
+              global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+              global.mainWindow.webContents.send('bot-disconnected', username)
+            })
+          },
+          agent: new ProxyAgent({
+            protocol: 'http',
+            host: proxy.ip,
+            port: proxy.port,
+            auth: proxy.user
+          }),
+          username: username,
+          version: version
+        })
+      } else if (user && password) {
+        console.log("proxy, type: " + proxyType)
+        console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+        if (ipPortRegex.test(host)) {
+          const [ip, port] = host.split(':');
+          record.ip = ip;
+          record.port = parseInt(port);
+        } else {
+          record = await getSRVRecord(host);
+          if (!record) {
+            console.log('SRV Record nao encontrado, bot anulado... ');
+            return;
+          }
+        }
+
+        bot = mineflayer.createBot({
+          connect: (client) => {
+            const req = Http.request({
+              host: proxy.ip,
+              port: proxy.port,
+              method: 'CONNECT',
+              path: record.ip + ':' + parseInt(record.port),
+              headers: {
+                'Proxy-Authorization': 'Basic ' + Buffer.from(proxy.user + ':' + proxy.password).toString('base64')
+              }
+            })
+            req.end()
+
+            req.on('connect', (res, stream) => {
+              client.setSocket(stream)
+              client.emit('connect')
+            })
+
+            req.on('error', (err) => {
+              console.log(err);
+              const indexConectado = botsConectado.indexOf(username);
+              if (indexConectado > -1) {
+                botsConectado.splice(indexConectado, 1);
+              }
+
+              const indexArray = botsaarray.indexOf(bot);
+              if (indexArray > -1) {
+                botsaarray.splice(indexArray, 1);
+              }
+
+              global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
+
+              global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
+              global.mainWindow.webContents.send('bot-disconnected', username)
+            })
+          },
+          agent: new ProxyAgent({
+            protocol: 'http',
+            host: proxy.ip,
+            port: proxy.port,
+            auth: proxy.user + ':' + proxy.password
+          }),
+          username: username,
+          version: version
+        })
       }
     }
-
-    bot = mineflayer.createBot({
-      connect: (client) => {
-        const req = Http.request({
-          host: proxy.ip,
-          port: parseInt(proxy.port),
-          method: 'CONNECT',
-          path: record.ip + ':' + parseInt(record.port)
-        })
-        req.end()
-
-        req.on('connect', (res, stream) => {
-          client.setSocket(stream)
-          client.emit('connect')
-        })
-
-        req.on('error', (err) => {
-          console.log(err);
-          const indexConectado = botsConectado.indexOf(username);
-          if (indexConectado > -1) {
-            botsConectado.splice(indexConectado, 1);
-          }
-
-          const indexArray = botsaarray.indexOf(bot);
-          if (indexArray > -1) {
-            botsaarray.splice(indexArray, 1);
-          }
-
-          global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
-
-          global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
-          global.mainWindow.webContents.send('bot-disconnected', username)
-        })
-      },
-      agent: new ProxyAgent({ protocol: 'http', host: proxy.ip, port: proxy.port }),
-      username: username,
-      version: version
-    })
-  }
-  else if (proxy && proxy.ip && proxy.port && proxy.user && !proxy.password && (proxyType === 'http')) {
-    console.log("proxy, no pass, type: " + proxyType)
-    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
-    if (ipPortRegex.test(host)) {
-      const [ip, port] = host.split(':');
-      record.ip = ip;
-      record.port = parseInt(port);
-    } else {
-      record = await getSRVRecord(host);
-      if (!record) {
-        console.log('SRV Record nao encontrado, bot anulado... ');
-        return;
-      }
-    }
-
-    bot = mineflayer.createBot({
-      connect: (client) => {
-        const req = Http.request({
-          host: proxy.ip,
-          port: proxy.port,
-          method: 'CONNECT',
-          path: record.ip + ':' + parseInt(record.port),
-          headers: {
-            'Proxy-Authorization': 'Basic ' + Buffer.from(proxy.user).toString('base64')
-          }
-        })
-        req.end()
-
-        req.on('connect', (res, stream) => {
-          client.setSocket(stream)
-          client.emit('connect')
-        })
-
-        req.on('error', (err) => {
-          console.log(err);
-          const indexConectado = botsConectado.indexOf(username);
-          if (indexConectado > -1) {
-            botsConectado.splice(indexConectado, 1);
-          }
-
-          const indexArray = botsaarray.indexOf(bot);
-          if (indexArray > -1) {
-            botsaarray.splice(indexArray, 1);
-          }
-
-          global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
-
-          global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
-          global.mainWindow.webContents.send('bot-disconnected', username)
-        })
-      },
-      agent: new ProxyAgent({
-        protocol: 'http',
-        host: proxy.ip,
-        port: proxy.port,
-        auth: proxy.user
-      }),
-      username: username,
-      version: version
-    })
-
-  }
-  else if (proxy && proxy.ip && proxy.port && proxy.user && proxy.password && (proxyType === 'http')) {
-    console.log("proxy, type: " + proxyType)
-    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
-    if (ipPortRegex.test(host)) {
-      const [ip, port] = host.split(':');
-      record.ip = ip;
-      record.port = parseInt(port);
-    } else {
-      record = await getSRVRecord(host);
-      if (!record) {
-        console.log('SRV Record nao encontrado, bot anulado... ');
-        return;
-      }
-    }
-
-    bot = mineflayer.createBot({
-      connect: (client) => {
-        const req = Http.request({
-          host: proxy.ip,
-          port: proxy.port,
-          method: 'CONNECT',
-          path: record.ip + ':' + parseInt(record.port),
-          headers: {
-            'Proxy-Authorization': 'Basic ' + Buffer.from(proxy.user + ':' + proxy.password).toString('base64')
-          }
-        })
-        req.end()
-
-        req.on('connect', (res, stream) => {
-          client.setSocket(stream)
-          client.emit('connect')
-        })
-
-        req.on('error', (err) => {
-          console.log(err);
-          const indexConectado = botsConectado.indexOf(username);
-          if (indexConectado > -1) {
-            botsConectado.splice(indexConectado, 1);
-          }
-
-          const indexArray = botsaarray.indexOf(bot);
-          if (indexArray > -1) {
-            botsaarray.splice(indexArray, 1);
-          }
-
-          global.mainWindow.webContents.send('botsarraytohtml', botsConectado);
-
-          global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
-          global.mainWindow.webContents.send('bot-disconnected', username)
-        })
-      },
-      agent: new ProxyAgent({
-        protocol: 'http',
-        host: proxy.ip,
-        port: proxy.port,
-        auth: proxy.user + ':' + proxy.password
-      }),
-      username: username,
-      version: version
-    })
-
-  }
-  else {
+  } else {
+    console.log(proxy)
+    console.log(proxy.ip)
+    console.log(proxy.port)
+    console.log(proxy.user)
+    console.log(proxy.password)
     console.log("bot without proxy")
     bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
   }
@@ -991,36 +997,36 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
 
   const pluginDir = './plugins';
 
-  fs.access(pluginDir, fs.constants.F_OK, (err) => {
+  fs.access(pluginDir, fs.constants.F_OK, async (err) => {
     if (err) {
       console.error(`Diretório ${pluginDir} não existe.`);
+      return;
     }
 
-    fs.readdir(pluginDir, (err, files) => {
+    fs.readdir(pluginDir, async (err, files) => {
       if (err) {
         console.error('Não foi possível ler o diretório de plugins:', err);
+        return;
       }
 
       if (files.length === 0) {
         console.log('Nenhum plugin para carregar.');
+        return;
       }
 
-      files.forEach(file => {
+      for (let file of files) {
         if (path.extname(file) === '.js') {
           console.log(`Carregando plugin: ${file}`);
-          const plugin = require(`${pluginDir}/${file}`);
-          bot.loadPlugin(plugin);
+          try {
+            const plugin = await import(`${pluginDir}/${file}`);
+            bot.loadPlugin(plugin.default);
+          } catch (err) {
+            console.error(`Erro ao carregar o plugin ${file}:`, err);
+          }
         }
-      });
+      }
     });
   });
-
-  let options = {
-    port: 9531,
-    startOnLoad: false
-  }
-
-  inventoryViewer(bot, options)
 
   bot.on('connect', async () => {
     //if (!botsConectado.includes(username)) {
@@ -1641,10 +1647,19 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
         }
         else if (message.toLowerCase().startsWith("$inventoryinterface")) {
           (async () => {
+            if (!inventorywasopen) {
+              let options = {
+                port: 9531,
+                startOnLoad: false
+              }
+              inventoryViewer(bot, options) // Inicie o inventoryViewer aqui
+            }
+
             inventorywasopen = !inventorywasopen;
             if (!bot.webInventory.isRunning && inventorywasopen) {
               bot.webInventory.start();
               createInventoryWindow();
+              isWindowClosing = false; // Adicione esta linha
               global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Interface sendo aberta!</span><br><br/>" });
             } else {
               if (isInvWindowOpened()) {
@@ -1909,7 +1924,7 @@ ipcMain.on('send-message', async (event, { botUsername, message }) => {
       }
     }
   })
-  
+
   await sleep(1);
 })
 
@@ -1935,6 +1950,7 @@ ipcMain.on('reco-bot', async (event, host, username, version, proxy, proxyType) 
   const botExists = botsaarray.some(bot => bot.username === username);
 
   if (!botExists) {
+    console.log(proxy)
     ipcMain.emit('connect-bot', null, { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType });
     await sleep(1);
   } else {
@@ -1953,6 +1969,7 @@ ipcMain.on('reco-bot', async (event, host, username, version, proxy, proxyType) 
           botsaarray.splice(indexArray, 1);
         }
         await sleep(500);
+        console.log(proxy)
         ipcMain.emit('connect-bot', null, { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType });
       }
     });
