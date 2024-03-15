@@ -393,6 +393,7 @@ function createWindow() {
     resizable: false,
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
+	icon: __dirname + '/assets/icone.png',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
