@@ -1,1 +1,0 @@
-text="texto que voce quer clicar vai aqui"
