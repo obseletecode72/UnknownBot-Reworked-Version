@@ -5,11 +5,11 @@ let commands = [];
 let autologinfileexists = false;
 let usernames = {};
 
-if (!fs.existsSync('./plugins/auto-login.txt')) {
+if (!fs.existsSync('./config/auto-login.txt')) {
   console.error('Arquivo auto-login.txt não encontrado.');
 } else {
   autologinfileexists = true;
-  let data = fs.readFileSync('./plugins/auto-login.txt', 'utf8');
+  let data = fs.readFileSync('./config/auto-login.txt', 'utf8');
   let lines = data.split('\n');
   commands = lines.map(line => {
     let parts = line.split('=');
