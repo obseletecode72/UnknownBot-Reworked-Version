@@ -67,7 +67,7 @@ global.Syntax = `
 
 let ClickTextDetect = false;
 let textFromFile = '';
-const filePath = path.join(__dirname, 'ClickText.txt');
+const filePath = path.join(__dirname, '/config/ClickText.txt');
 if (fs.existsSync(filePath)) {
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
