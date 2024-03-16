@@ -662,7 +662,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 ipcMain.on('log', (event, message) => {
-  console.log(message); // Imprime a mensagem no console do navegador
+  console.log(message);
 });
 
 ipcMain.on('send-message-all', (event, message) => {
@@ -672,9 +672,9 @@ ipcMain.on('send-message-all', (event, message) => {
 function addBlockToChunk(chunk, blockType, position) {
   const newBlock = {
     type: blockType,
-    metadata: 0, // Substitua por qualquer metadado necessário
-    light: 15, // Substitua por qualquer valor de luz necessário
-    skyLight: 15, // Substitua por qualquer valor de luz do céu necessário
+    metadata: 0,
+    light: 15,
+    skyLight: 15,
   };
   chunk.setBlock(position, newBlock);
   //console.log("bloco adicionado!!!!")
