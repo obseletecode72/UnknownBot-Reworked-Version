@@ -668,6 +668,17 @@ ipcMain.on('send-message-all', (event, message) => {
   global.mainWindow.webContents.send('bot-message-all', message)
 });
 
+function addBlockToChunk(chunk, blockType, position) {
+  const newBlock = {
+    type: blockType,
+    metadata: 0, // Substitua por qualquer metadado necessário
+    light: 15, // Substitua por qualquer valor de luz necessário
+    skyLight: 15, // Substitua por qualquer valor de luz do céu necessário
+  };
+  chunk.setBlock(position, newBlock);
+  //console.log("bloco adicionado!!!!")
+}
+
 let botsaarray = []
 let placedBlocks = new Set();
 
@@ -981,11 +992,6 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
       }
     }
   } else {
-    console.log(proxy)
-    console.log(proxy.ip)
-    console.log(proxy.port)
-    console.log(proxy.user)
-    console.log(proxy.password)
     console.log("bot without proxy")
     bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
   }
@@ -1059,6 +1065,42 @@ ipcMain.on('connect-bot', async (event, { host, username, version, proxy, proxyT
     }
     else if (!newBlock && oldBlock) {
       placedBlocks.delete(oldBlock.position.toString());
+    }
+  });
+  
+  const Chunk = require('prismarine-chunk')(bot.version);
+
+  bot._client.on('multi_block_change', (packet) => { // bypass fall check, so nao fiz em plugin pq da erro por algum motivo
+    const chunkPos = new Vec3(packet.chunkX, 0, packet.chunkZ);
+    let chunk = bot.world.getColumnAt(chunkPos);
+
+    if (!chunk) {
+      chunk = new Chunk();
+      bot.world.setColumn(chunkPos.x, chunkPos.z, chunk);
+
+      packet.records.forEach((record) => {
+        const x = record.horizontalPos >> 4;
+        const z = record.horizontalPos & 0xF;
+        const y = record.y;
+        const blockPos = new Vec3(x, y, z);
+        addBlockToChunk(chunk, record.blockId, blockPos);
+      });
+    }
+  });
+
+  bot._client.on('block_change', (packet) => { // bypass fall check, so nao fiz em plugin pq da erro por algum motivo
+    const blockPos = new Vec3(packet.location.x, packet.location.y, packet.location.z);
+    bot.entity.position = blockPos;
+
+    const chunkPos = new Vec3(Math.floor(blockPos.x / 16), 0, Math.floor(blockPos.z / 16));
+    let chunk = bot.world.getColumnAt(chunkPos);
+
+    if (!chunk) {
+      chunk = new Chunk();
+      bot.world.setColumn(chunkPos.x, chunkPos.z, chunk);
+
+      const relativePos = new Vec3(blockPos.x % 16, blockPos.y, blockPos.z % 16);
+      addBlockToChunk(chunk, packet.type, relativePos);
     }
   });
 
@@ -1949,7 +1991,6 @@ ipcMain.on('reco-bot', async (event, host, username, version, proxy, proxyType) 
   const botExists = botsaarray.some(bot => bot.username === username);
 
   if (!botExists) {
-    console.log(proxy)
     ipcMain.emit('connect-bot', null, { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType });
     await sleep(1);
   } else {
@@ -1968,7 +2009,6 @@ ipcMain.on('reco-bot', async (event, host, username, version, proxy, proxyType) 
           botsaarray.splice(indexArray, 1);
         }
         await sleep(500);
-        console.log(proxy)
         ipcMain.emit('connect-bot', null, { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType });
       }
     });
