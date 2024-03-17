@@ -9,8 +9,8 @@ let child = childProcess.fork(path.join(__dirname, 'create_bot.js'));
 
 let janelasCaptcha = {};
 
-let ClickTextDetect = false;
-let textFromFile = '';
+let ClickTextDetectFromVar = false;
+let textFromFileFromVar = '';
 const filePath = path.join(__dirname, '/config/ClickText.txt');
 
 let inventoryWindow = null;
@@ -26,18 +26,18 @@ if (fs.existsSync(filePath)) {
     // Verifica se a string 'text="' existe no arquivo
     if (data.includes('text="')) {
       // Extrai a mensagem após text=
-      textFromFile = data.split('text="')[1].split('"')[0];
+      textFromFileFromVar = data.split('text="')[1].split('"')[0];
 
-      if (textFromFile != "") {
+      if (textFromFileFromVar != "") {
         // Remove acentos do texto
-        let textWithoutAccents = unidecode(textFromFile);
+        let textWithoutAccents = unidecode(textFromFileFromVar);
 
         console.log("Texto Extraido: " + textWithoutAccents);
         console.log("Caso tenha acentos o codigo ira remover os acentos para nao causar erros!")
-        ClickTextDetect = true;
+        ClickTextDetectFromVar = true;
 
         // Envia as variáveis para o processo filho
-        child.send({ event: 'ClickText', data: { ClickTextDetect, textFromFile: textWithoutAccents } });
+        child.send({ event: 'ClickText', data: { ClickTextDetectFromVar, textFromFileFromVar: textWithoutAccents } });
       }
       else {
         console.log("Texto vazio");
