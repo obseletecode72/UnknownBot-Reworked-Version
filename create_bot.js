@@ -1904,7 +1904,7 @@ process.on('message', async (process_msg_) => {
         botsaarrayCopy.forEach((bot) => {
             if (bot.username == botUsername) {
                 bot.chat(captchaInput);
-                global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Captcha enviado!</span><br/>" })
+                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>Captcha enviado!</span><br/>" } });
             }
         })
     }
