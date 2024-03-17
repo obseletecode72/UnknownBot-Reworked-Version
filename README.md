@@ -51,7 +51,7 @@ Para compilar o UnknownBot em .exe voce pode seguir estes passos abaixo, ou baix
 
 1- De o commando 'npm install -g electron-packager', isso ira instalar o empacotador para deixar ele em .exe
 
-2- ' electron-packager . UnknownBot --platform=win32 --arch=x64 --app-version=3.1.0 --electron-version=17.1.2 --author="win32k_sys" ', isso ira compilar em .exe em uma pasta
+2- ' electron-packager . UnknownBot --platform=win32 --arch=x64 --app-version=3.1.0 --electron-version=29.1.4 --author="win32k_sys" ', isso ira compilar em .exe em uma pasta
 
 
 
