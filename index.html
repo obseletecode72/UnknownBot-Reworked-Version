@@ -454,7 +454,7 @@
         const version = botVersions[botUsername]
         const proxy = botProxies[botUsername]
         const proxyType = botProxyTypes[botUsername]
-        ipcRenderer.send('reco-bot', host, botUsername, version, proxy, proxyType)
+        ipcRenderer.send('reco-bot', { host, botUsername, version, proxy, proxyType });
       }
       else if (event.target.id === 'showchat-all') {
         const chatDivAll = document.getElementById(`chat-all`)
