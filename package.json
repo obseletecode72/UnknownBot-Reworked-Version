@@ -1,4 +1,7 @@
 {
+  "name": "UnknownBot",
+  "version": "3.1.0",
+  "author": "win32k_sys",
   "dependencies": {
     "atob": "^2.1.2",
     "dns": "^0.2.2",
