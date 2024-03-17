@@ -9,7 +9,7 @@ module.exports = function (bot) {
       if (global.listadecommandos.some(cmd => message.toLowerCase().startsWith(cmd.toLowerCase()))) {
         if (message.toLowerCase() === "$exemplo2") {
           bot.chat('Olá, mundo! mensagem enviada por comando!');
-          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:green'>Mensagem enviada por plugin!</span><br/>" })
+          process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>Mensagem enviada por plugin!</span><br/>" } });
           // bem aqui 
         }
       }

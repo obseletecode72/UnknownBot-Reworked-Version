@@ -22,7 +22,7 @@ module.exports = function (bot) {
           antiAfkState[bot.username] = !antiAfkState[bot.username];
           let cor = antiAfkState[bot.username] ? 'green' : 'red';
           let status = antiAfkState[bot.username] ? 'ativado' : 'desativado';
-          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:${cor}'>AntiAFK ${status}!</span><br/>` });
+          process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:${cor}'>AntiAFK ${status}!</span><br/>` } });
 
           if (antiAfkState[bot.username]) {
             antiAfkInterval[bot.username] = setInterval(() => {

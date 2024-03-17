@@ -14,7 +14,7 @@ module.exports = function (bot) {
           herbalismoAtivo[bot.username] = !herbalismoAtivo[bot.username];
           let status = herbalismoAtivo[bot.username] ? 'ativado' : 'desativado';
           let cor = herbalismoAtivo[bot.username] ? 'green' : 'red';
-          global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: `<br/><span style='color:${cor}'>Herbalismo ${status}!</span><br/>` });
+          process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:${cor}'>Herbalismo ${status}!</span><br/>` } });
           if (herbalismoAtivo[bot.username]) {
             quebraPlantacoes(bot);
           }
