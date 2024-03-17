@@ -7,9 +7,16 @@ const unidecode = require('unidecode');
 const { fork } = require('child_process');
 const child = fork('create_bot.js');
 
+let janelasCaptcha = {};
+
 let ClickTextDetect = false;
 let textFromFile = '';
 const filePath = path.join(__dirname, '/config/ClickText.txt');
+
+
+let inventoryWindow = null;
+const isInvWindowOpened = () => !inventoryWindow?.isDestroyed() && inventoryWindow?.isFocusable();
+
 if (fs.existsSync(filePath)) {
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
@@ -40,8 +47,20 @@ if (fs.existsSync(filePath)) {
   });
 }
 
-global.mainWindow;
+function createWindow(data) {
+  const win = new BrowserWindow(data.options);
+  win.loadFile(data.file);
+  win.setMenu(null);
 
+  win.on('close', data.onClose);
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.send(data.event, data.message);
+  });
+
+  return win;
+}
+
+global.mainWindow;
 
 function createWindow() {
   global.mainWindow = new BrowserWindow({
@@ -96,6 +115,88 @@ child.on('message', (message) => {
   }
   if (message.type === 'ipcMain') {
     ipcMain.emit(message.event, null, message.data);
+  }
+  if (message.type === 'electron' && message.action === 'createCaptchaWindow') {
+    const { botusername, captchaImage } = message.data;
+
+    // Se a janela já existir para este bot, feche-a antes de criar uma nova
+    if (janelasCaptcha[botusername]) {
+      janelasCaptcha[botusername].close();
+      janelasCaptcha[botusername] = null;
+    }
+
+    janelasCaptcha[botusername] = new BrowserWindow({
+      width: 300,
+      height: 300,
+      show: true,
+      resizable: false,
+      autoHideMenuBar: true,
+      titleBarStyle: 'hidden',
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    })
+
+    janelasCaptcha[botusername].loadFile(`${__dirname}/assets/captcha.html`)
+    janelasCaptcha[botusername].setMenu(null) // Oculta o menu padrão
+
+    /*janelasCaptcha[botusername].on('close', () => {
+      if (!janelasCaptcha[botusername]) {
+        delete captchaImages[botusername];
+      }
+    });*/
+
+    janelasCaptcha[botusername].webContents.on('did-finish-load', () => {
+      janelasCaptcha[botusername].webContents.send('bot-janela-1', botusername, captchaImage);
+    })
+  }
+  if (message.type === 'electron' && message.action === 'createWebInventoryWindow') {
+    const botusername = message.data.bot;
+    inventoryWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
+      webPreferences: {
+        nodeIntegration: true,
+      },
+      frame: false
+    })
+
+    inventoryWindow.loadURL('http://localhost:9531')
+    inventoryWindow.setMenu(null)
+
+    inventoryWindow.on('closed', async () => {
+      global.mainWindow.webContents.send('bot-message', { bot: botusername, message: "<br/><span style='color:red'>Interface fechada!</span><br><br/>" });
+    });
+  }
+  if (message.type === 'bot-end') {
+    const username = message.username;
+
+    if (janelasCaptcha[username]) {
+      janelasCaptcha[username].close();
+      janelasCaptcha[username] = null;
+    }
+
+    if (isInvWindowOpened()) {
+      inventoryWindow.loadURL('about:blank');
+      inventoryWindow.close();
+      inventoryWindow = null;
+    }
+  }
+  if (message.type === 'closewindowcaptcha') {
+    const username = message.username;
+
+    if (janelasCaptcha[username]) {
+      janelasCaptcha[username].close();
+      janelasCaptcha[username] = null;
+    }
+  }
+  if (message.type === 'closewindowinventory') {
+    if (isInvWindowOpened()) {
+      inventoryWindow.loadURL('about:blank');
+      inventoryWindow.close();
+      inventoryWindow = null;
+    }
   }
 });
 

@@ -343,7 +343,7 @@
           const username = botUsername // Use botUsername diretamente
           const proxy = botProxies[botUsername]
           const proxyType = botProxyTypes[botUsername]
-          ipcRenderer.send('reco-bot', host, botUsername, version, proxy, proxyType)
+          ipcRenderer.send('reco-bot', { host, botUsername, version, proxy, proxyType })
         }
       }
     }

@@ -13,6 +13,8 @@ const fs = require('fs');
 const path = require('path');
 const unidecode = require('unidecode');
 
+let inventorywasopen = false;
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -67,13 +69,7 @@ let autoreconnect = false;
 let autoreconnectdelay = 0;
 let mcData;
 
-let janelasCaptcha = {};
 let captchaImages = {};
-const isInvWindowOpened = () => !inventoryWindow?.isDestroyed() && inventoryWindow?.isFocusable();
-
-let inventorywasopen = false;
-let inventoryWindow = null;
-let isWindowClosing = false;
 
 const resolveSrv = util.promisify(dns.resolveSrv);
 const lookup = util.promisify(dns.lookup);
@@ -464,54 +460,6 @@ function processTitle(title) {
     return `<span style="color:${htmlColor}; font-weight:${fontWeight};">${fullTitle}</span>`;
 }
 
-function createInventoryWindow() {
-    inventoryWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
-        webPreferences: {
-            nodeIntegration: true,
-        },
-        frame: false  // Adiciona esta linha
-    })
-
-    inventoryWindow.loadURL('http://localhost:9531')
-    inventoryWindow.setMenu(null)  // Adiciona esta linha
-}
-
-function CreateCaptchaWindow(botusername) {
-    // Se a janela já existir para este bot, feche-a antes de criar uma nova
-    if (janelasCaptcha[botusername]) {
-        janelasCaptcha[botusername].close();
-        janelasCaptcha[botusername] = null;
-    }
-
-    janelasCaptcha[botusername] = new BrowserWindow({
-        width: 300,
-        height: 300,
-        show: true,
-        resizable: false,
-        autoHideMenuBar: true,
-        titleBarStyle: 'hidden',
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-        }
-    })
-
-    janelasCaptcha[botusername].loadFile(`${__dirname}/assets/captcha.html`)
-    janelasCaptcha[botusername].setMenu(null) // Oculta o menu padrão
-
-    janelasCaptcha[botusername].on('close', () => {
-        if (!janelasCaptcha[botusername]) {
-            delete captchaImages[botusername];
-        }
-    });
-
-    janelasCaptcha[botusername].webContents.on('did-finish-load', () => {
-        janelasCaptcha[botusername].webContents.send('bot-janela-1', botusername, captchaImages[botusername]);
-    })
-}
-
 function getColor(colorId) {
     const colors = [
         { red: 0, green: 0, blue: 0, alpha: 255 },
@@ -748,55 +696,100 @@ function addBlockToChunk(chunk, blockType, position) {
     //console.log("bloco adicionado!!!!")
 }
 
-async function head_captcha_solver(bot, window) {
-    let allHeads = true;
+async function head_captcha_solver_2(bot, window) {
+    let headCount = 0;
     let urls = {};
     let slots = {};
 
-    // Verifica todos os itens no baú
     for (let i = 0; i < window.slots.length; i++) {
         let slot = window.slots[i];
         if (slot && slot.nbt) {
-            if (slot.name !== 'player_head' && slot.name !== 'skull') {
-                allHeads = false;
-                break;
-            }
-            let nbt = JSON.stringify(slot.nbt);
-            let regex = /"Value":\{"type":"string","value":"(.*?)"\}/g;
-            let matches = [...nbt.matchAll(regex)];
-            if (matches.length > 1) {
-                let base64 = matches[1][1];
-                let decodedString = atob(base64);
-                try {
-                    let jsonObject = JSON.parse(decodedString);
-                    if (jsonObject.textures && jsonObject.textures.SKIN && jsonObject.textures.SKIN.url) {
-                        let url = jsonObject.textures.SKIN.url;
-                        urls[url] = (urls[url] || 0) + 1;
-                        slots[url] = i; // Guarda o índice do slot para cada URL
+            if (slot.name === 'player_head' || slot.name === 'skull') {
+                headCount++;
+                let nbt = JSON.stringify(slot.nbt);
+                let regex = /"Value":{"type":"string","value":"(.*?)"}/g;
+                let matches = [...nbt.matchAll(regex)];
+                if (matches.length > 0) {
+                    let base64 = matches[0][1];
+                    let decodedString = atob(base64);
+                    try {
+                        let jsonObject = JSON.parse(decodedString);
+                        if (jsonObject.textures && jsonObject.textures.SKIN && jsonObject.textures.SKIN.url) {
+                            let url = jsonObject.textures.SKIN.url;
+                            urls[url] = (urls[url] || 0) + 1;
+                            slots[url] = i;
+                        }
+                    } catch (e) {
+                        console.log(`Erro ao analisar a string decodificada em JSON: ${e}`);
                     }
-                } catch (e) {
-                    console.log(`Erro ao analisar a string decodificada em JSON: ${e}`);
                 }
             }
         }
     }
 
-    if (!allHeads) {
-        return; // Se nem todos os itens são cabeças de jogador, o código para aqui
+    if (headCount < 3) {
+        return;
     }
 
-    global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " })
+    process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " } });
 
-    // Encontra a URL única
+    let repeatedUrl = Object.keys(urls).find(url => urls[url] > 1);
+
+    if (repeatedUrl) {
+        let slotIndex = slots[repeatedUrl];
+        bot.clickWindow(slotIndex, 0, 0);
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " } });
+    } else {
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " } });
+    }
+}
+
+async function head_captcha_solver(bot, window) {
+    let headCount = 0;
+    let urls = {};
+    let slots = {};
+
+    for (let i = 0; i < window.slots.length; i++) {
+        let slot = window.slots[i];
+        if (slot && slot.nbt) {
+            if (slot.name === 'player_head' || slot.name === 'skull') {
+                headCount++;
+                let nbt = JSON.stringify(slot.nbt);
+                let regex = /"Value":\{"type":"string","value":"(.*?)"\}/g;
+                let matches = [...nbt.matchAll(regex)];
+                if (matches.length > 1) {
+                    let base64 = matches[1][1];
+                    let decodedString = atob(base64);
+                    try {
+                        let jsonObject = JSON.parse(decodedString);
+                        if (jsonObject.textures && jsonObject.textures.SKIN && jsonObject.textures.SKIN.url) {
+                            let url = jsonObject.textures.SKIN.url;
+                            urls[url] = (urls[url] || 0) + 1;
+                            slots[url] = i;
+                        }
+                    } catch (e) {
+                        console.log(`Erro ao analisar a string decodificada em JSON: ${e}`);
+                    }
+                }
+            }
+        }
+    }
+
+    if (headCount < 3) {
+        return;
+    }
+
+    process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " } });
+
     let uniqueUrl = Object.keys(urls).find(url => urls[url] === 1);
 
     if (uniqueUrl) {
         let slotIndex = slots[uniqueUrl];
-        bot.clickWindow(slotIndex, 0, 0); // Exemplo de como você pode clicar no slot
-        global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " })
+        bot.clickWindow(slotIndex, 0, 0);
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " } });
     } else {
-        global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " })
-        global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Tentando outro metodo...</span><br/> " })
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " } });
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Tentando outro metodo...</span><br/> " } });
         head_captcha_solver_2(bot, window)
     }
 }
@@ -1243,15 +1236,7 @@ process.on('message', async (process_msg_) => {
             process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'disconnected' } });
             process.send({ type: 'webcontents', event: 'bot-disconnected', data: username });
 
-            if (janelasCaptcha[username]) {
-                janelasCaptcha[username].close();
-                janelasCaptcha[username] = null;
-            }
-
-            if (isInvWindowOpened()) {
-                inventoryWindow.close();
-                inventoryWindow = null;
-            }
+            process.send({ type: 'bot-end', username: username });
 
             if (miningState[bot.username]) {
                 miningState[bot.username] = false;
@@ -1305,7 +1290,9 @@ process.on('message', async (process_msg_) => {
                     // Armazena a imagem na memória como uma string codificada em base64
                     captchaImages[bot.username] = blob.toString('base64');
 
-                    app.whenReady().then(() => CreateCaptchaWindow(bot.username));
+                    process.send({ type: 'electron', action: 'createCaptchaWindow', data: { botusername: bot.username, captchaImage: captchaImages[bot.username] } });
+
+                    captchaImages[bot.username] = null; // deixar memoria zerada ja que daria muito trabalho reenviar de volta e zerar e os caralho, fodase vai ser assim
                 });
             }
         });
@@ -1560,60 +1547,33 @@ process.on('message', async (process_msg_) => {
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Todos itens dropados!</span><br/>` } })
                         })();
                     }
+                    // O restante do seu código
                     else if (message.toLowerCase().startsWith("$inventoryinterface")) {
-                        (async () => {
-                            if (!inventorywasopen) {
-                                let options = {
-                                    port: 9531,
-                                    startOnLoad: false
-                                }
-                                inventoryViewer(bot, options) // Inicie o inventoryViewer aqui
-                            }
+                        inventorywasopen = !inventorywasopen;
 
-                            inventorywasopen = !inventorywasopen;
-                            if (!bot.webInventory.isRunning && inventorywasopen) {
+                        if (inventorywasopen) {
+                            let options = {
+                                port: 9531,
+                                startOnLoad: false
+                            }
+                            inventoryViewer(bot, options) // Inicie o inventoryViewer aqui
+                        }
+
+                        if (inventorywasopen) {
+                            if (!bot.webInventory.isRunning) {
                                 bot.webInventory.start();
-                                createInventoryWindow();
+                                process.send({ type: 'electron', action: 'createWebInventoryWindow', data: { bot: bot.username } });
                                 isWindowClosing = false; // Adicione esta linha
                                 process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>Interface sendo aberta!</span><br><br/>" } });
-                            } else {
-                                if (isInvWindowOpened()) {
-                                    inventoryWindow.loadURL('about:blank');
-                                    isWindowClosing = false;
-                                }
-                                bot.webInventory.stop();
                             }
-                            let intervalIdIV = setInterval(async () => {
-                                if (!bot.webInventory.isRunning) {
-                                    if (isInvWindowOpened()) {
-                                        if (bot.webInventory.isRunning) {
-                                            bot.webInventory.stop();
-                                            inventorywasopen = !inventorywasopen;
-                                        }
-                                        if (!bot.webInventory.isRunning && !isWindowClosing) {
-                                            inventoryWindow.close();
-                                            inventoryWindow = null;
-                                        }
-                                    }
-                                    else {
-                                        clearInterval(intervalIdIV);
-                                    }
-                                }
-                            }, 100);
-
-                            inventoryWindow.on('closed', async () => {
-                                if (isWindowClosing) return;
-                                isWindowClosing = true;
-
-                                if (inventorywasopen) {
-                                    inventorywasopen = !inventorywasopen;
-                                }
-                                if (bot.webInventory.isRunning) {
+                        } else {
+                            for (let bot of botsaarray) {
+                                if (bot.webInventory && bot.webInventory.isRunning) {
                                     bot.webInventory.stop();
                                 }
-                                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:red'>Interface fechada!</span><br><br/>" } });
-                            });
-                        })();
+                            }
+                            process.send({ type: 'closewindowinventory' });
+                        }
                     }
                     else if (message.toLowerCase().startsWith("$miner ")) {
                         (async () => {
@@ -1899,12 +1859,13 @@ process.on('message', async (process_msg_) => {
         }
     }
     if (process_msg_.event === 'captcha-input-janela1') {
-        const { botUsername, captchaInput } = process_msg_.data;
+        const { botrightnow, captchaInput } = process_msg_.data;
         const botsaarrayCopy = [...botsaarray];
         botsaarrayCopy.forEach((bot) => {
-            if (bot.username == botUsername) {
+            if (bot.username == botrightnow) {
                 bot.chat(captchaInput);
                 process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>Captcha enviado!</span><br/>" } });
+                process.send({ type: 'closewindowcaptcha', username: bot.username });
             }
         })
     }
