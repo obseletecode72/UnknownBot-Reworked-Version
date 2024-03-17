@@ -11,6 +11,7 @@ const inventoryViewer = require('mineflayer-web-inventory')
 const PNGImage = require('pngjs-image');
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 const unidecode = require('unidecode');
 
 let inventorywasopen = false;
@@ -1113,7 +1114,7 @@ process.on('message', async (process_msg_) => {
 
         bot.loadPlugin(pathfinder)
 
-        const pluginDir = './plugins';
+        const pluginDir = path.resolve(__dirname, './plugins');
 
         fs.access(pluginDir, fs.constants.F_OK, async (err) => {
             if (err) {
@@ -1136,7 +1137,9 @@ process.on('message', async (process_msg_) => {
                     if (path.extname(file) === '.js') {
                         console.log(`Carregando plugin: ${file}`);
                         try {
-                            const plugin = await import(`${pluginDir}/${file}`);
+                            const pluginPath = path.resolve(pluginDir, file);
+                            const pluginUrl = url.pathToFileURL(pluginPath);
+                            const plugin = await import(pluginUrl);
                             bot.loadPlugin(plugin.default);
                         } catch (err) {
                             console.error(`Erro ao carregar o plugin ${file}:`, err);
