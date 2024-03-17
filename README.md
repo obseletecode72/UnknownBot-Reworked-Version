@@ -39,6 +39,8 @@ Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e um
 Sistema de plugins adicionado, tambem pode conter bugs, qualquer problema reporte entre em contato no discord, como a API e Mineflayer voce pode verificar a documentacao aqui: https://github.com/PrismarineJS/mineflayer/blob/master/docs/api.md
 Tambem tem os exemplos para voce comecar a produzir seus plugins na pasta plugins
 
+OBS: Electron nao e suportado nestes casos, por que o electron ja e usado no processo principal, e os bots sao criados no processo filho em que o electron nao e suportado pois ja e usado no processo principal
+
 ## Contato
 
 Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgqaw
