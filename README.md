@@ -24,7 +24,7 @@ Se quiser colaborar com o projeto e fazer suas modificações, e quiser que eu i
 
 2- Abra um cmd na mesma pasta em que voce extraiu os arquivos e use ´npm install´, isso ira instalar todas dependencias do projeto baseado no ´package.json´
 
-3- Use ´electron minefaa.js´ ou ´npx electron minefaa.js´ se nao der certo o primeiro comando, e pronto voce podera usar o bot
+3- Use ´electron index.js´ ou ´npx electron index.js´ se nao der certo o primeiro comando, e pronto voce podera usar o bot
 
 OBS: Para abrir um cmd na mesma pasta clique ao lado do nome da pasta no "Vazio" e apague todas as letras e digite 'cmd' apos isso pressione enter (aonde esta em azul e aonde voce deve clicar)
 
