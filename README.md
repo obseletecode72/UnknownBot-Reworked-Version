@@ -55,4 +55,5 @@ Para compilar o UnknownBot em .exe voce pode seguir estes passos abaixo, ou baix
 
 OBS: Quando o programa e compilado em .exe, ele sai do "Modo" Desenvolvimento para o "Modo" Release, deste jeito, as pastas plugins/assets/config etc... elas so estao disponiveis em, '/resources/app/' la voce podera encontrar as pastas e arquivos, portanto e la que voce vai querer modificar se voce quiser tirar algum plugin ou colocar/modificar etc...
 
+OBS2: La voce encontrara tambem a pasta node_modules, voce podera colar o digging.js se quiser la, e o mesmo procedimento, apenas mudou as pastas
 
