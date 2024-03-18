@@ -1114,7 +1114,7 @@ process.on('message', async (process_msg_) => {
 
         bot.loadPlugin(pathfinder)
 
-        const pluginDir = path.resolve(__dirname, './plugins');
+        const pluginDir = path.resolve(__dirname, './pluginsUBBOT');
 
         fs.access(pluginDir, fs.constants.F_OK, async (err) => {
             if (err) {

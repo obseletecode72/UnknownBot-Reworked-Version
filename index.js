@@ -11,7 +11,7 @@ let janelasCaptcha = {};
 
 let ClickTextDetectFromVar = false;
 let textFromFileFromVar = '';
-const filePath = path.join(__dirname, '/config/ClickText.txt');
+const filePath = path.join(__dirname, '/configUBBOT/ClickText.txt');
 
 let inventoryWindow = null;
 const isInvWindowOpened = () => !inventoryWindow?.isDestroyed() && inventoryWindow?.isFocusable();
@@ -69,7 +69,7 @@ function createWindow() {
     resizable: false,
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
-    icon: __dirname + '/assets/icone.png',
+    icon: __dirname + '/assetsUBBOT/icone.png',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -137,7 +137,7 @@ child.on('message', (message) => {
       }
     })
 
-    janelasCaptcha[botusername].loadFile(`${__dirname}/assets/captcha.html`)
+    janelasCaptcha[botusername].loadFile(`${__dirname}/assetsUBBOT/captcha.html`)
     janelasCaptcha[botusername].setMenu(null) // Oculta o menu padrão
 
     /*janelasCaptcha[botusername].on('close', () => {
