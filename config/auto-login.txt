@@ -1,2 +1,0 @@
-register="/register bosta123123 bosta123123"
-login="/login bosta123123"
