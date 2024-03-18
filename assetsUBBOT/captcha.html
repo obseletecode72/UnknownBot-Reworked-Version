@@ -1,1 +1,29 @@
+<!DOCTYPE html>
+<html>
 
+<body
+    style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: purple;">
+    <img id="captcha">
+    <form id="captcha-form" style="margin-top: 10px;">
+        <input type="text" id="captcha-input"
+            style="border-radius: 10px; padding: 5px; background-color: black; color: white; border: 1px solid black;">
+    </form>
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let botrightnow;
+        ipcRenderer.on('bot-janela-1', (event, bot, captchaImage) => {
+            botrightnow = bot;
+            document.getElementById('captcha').src = 'data:image/png;base64,' + captchaImage;
+        });
+
+        document.getElementById('captcha-form').addEventListener('submit', function (e) {
+            e.preventDefault(); // para evitar que o formulário seja submetido
+            const captchaInput = document.getElementById('captcha-input');
+            ipcRenderer.send('captcha-input-janela1', { botrightnow: botrightnow, captchaInput: captchaInput.value });
+            captchaInput.value = ''; // limpar o input
+        });
+    </script>
+</body>
+
+</html>
