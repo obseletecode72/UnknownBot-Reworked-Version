@@ -53,5 +53,6 @@ Para compilar o UnknownBot em .exe voce pode seguir estes passos abaixo, ou baix
 
 2- 'node converter-para-exe.js', isso ira compilar em .exe em uma pasta
 
+OBS: Quando o programa e compilado em .exe, ele sai do "Modo" Desenvolvimento para o "Modo" Release, deste jeito, as pastas plugins/assets/config etc... elas so estao disponiveis em, '/resources/app/' la voce podera encontrar as pastas e arquivos
 
 
