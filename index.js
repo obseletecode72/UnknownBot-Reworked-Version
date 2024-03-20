@@ -212,6 +212,5 @@ ipcMain.on('remove-bot', async (event, botUsername) => {
 });
 
 ipcMain.on('reco-bot', async (event, data) => {
-  console.log(data.botUsername)
   child.send({ event: 'reco-bot', data });
 });

@@ -10,6 +10,7 @@
     "electron-reload": "^2.0.0-alpha.1",
     "fs": "^0.0.1-security",
     "http": "^0.0.1-security",
+    "jimp": "^0.22.12",
     "minecraft-protocol": "^1.47.0",
     "mineflayer": "^4.20.0",
     "mineflayer-pathfinder": "^2.4.5",

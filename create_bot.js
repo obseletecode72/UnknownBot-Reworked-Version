@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const unidecode = require('unidecode');
+const Jimp = require('jimp');
 
 let inventorywasopen = false;
 
@@ -21,7 +22,7 @@ function sleep(ms) {
 }
 
 process.on('unhandledRejection', (reason, promise) => {
-    if (reason.message !== '(mineflayer-web-inventory) INFO: mineflayer-web-inventory is not running') { // webinventory dev fix that verification shit, its just if(bot.webInventory.running) stop on bot 'end'
+    if (reason.message !== '(mineflayer-web-inventory) INFO: mineflayer-web-inventory is not running') { // webinventory dev fix that shit verification, its just if(bot.webInventory.running) stop on bot 'end'
         // dont make nothing
     }
 });
@@ -29,7 +30,7 @@ process.on('unhandledRejection', (reason, promise) => {
 let bots = {};
 var botsConectado = [];
 let botsaarray = []
-let botsSemAutoReconnect = []; // Nova lista
+let botsSemAutoReconnect = [];
 
 
 // killaura part
@@ -100,12 +101,9 @@ let ClickTextDetect = false;
 let textFromFile = '';
 
 function processClickEvent(bot, message) {
-    // Verifica se message.json e message.json.extra existem e são do tipo correto
     if (message && message.json && Array.isArray(message.json.extra)) {
-        // Verifica as mensagens que estão vindo de acordo com o evento message
         message.json.extra.forEach((extra) => {
             if (extra && extra.clickEvent) {
-                // Se o text="" for o mesmo da que tiver o clickevent, rodar o comando que foi extraido dela
                 if (unidecode(extra.text) === unidecode(textFromFile)) {
                     bot.chat(extra.clickEvent.value);
                     process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>Mensagem clicada!</span><br/>" } });
@@ -116,10 +114,8 @@ function processClickEvent(bot, message) {
 }
 
 async function pesca(bot) {
-    // Verifique o inventário do bot por uma vara de pesca
     const itemVaraDePesca = bot.inventory.items().find(item => item.name === 'fishing_rod');
 
-    // Se tiver uma vara de pesca, equipe-a na mão do bot
     if (itemVaraDePesca) {
         await bot.equip(itemVaraDePesca, 'hand');
     } else {
@@ -127,30 +123,24 @@ async function pesca(bot) {
         return;
     }
 
-    // Encontre o bloco de água mais próximo
     const blocoAgua = bot.findBlock({
         matching: ['water', 'flowing_water'].map(name => mcData.blocksByName[name].id),
         maxDistance: 8,
     });
 
-    // Se encontrou um bloco de água, olhe para ele
     if (blocoAgua) {
         await bot.lookAt(blocoAgua.position.offset(0, 1, 0));
 
-        // Verifique se há uma entidade na posição que o bot está olhando
         const entity = bot.nearestEntity();
 
-        // Se houver uma entidade, espere até que ela saia
         if (entity && bot.entity.position.distanceTo(entity.position) < 1) {
             global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Esperando a entidade sair...</span><br/>" })
             bot.once('entityGone', async () => {
                 await pesca(bot);
             });
         } else {
-            // Comece a pescar
             await bot.fish();
 
-            // Se a pesca ainda estiver ativa, chame a função pesca novamente
             if (PescaActive[bot.username]) {
                 await pesca(bot);
             }
@@ -165,12 +155,12 @@ async function onDiggingCompleted(bot, err) {
         console.log(`Erro ao minerar o bloco: ${err.message}`);
     } else {
         console.log('Bloco minerado com sucesso.');
-        clearInterval(swingInterval[bot.username]); // Limpa o intervalo após a mineração ser concluída
+        clearInterval(swingInterval[bot.username]);
     }
 }
 
 async function minerar(bot, blockId) {
-    if (!miningState[bot.username]) { // Se a mineração estiver desativada
+    if (!miningState[bot.username]) {
         return;
     }
 
@@ -183,7 +173,7 @@ async function minerar(bot, blockId) {
     });
 
     if (block) {
-        swingInterval[bot.username] = setInterval(async () => { // Adiciona o intervalo ao objeto swingInterval
+        swingInterval[bot.username] = setInterval(async () => {
             try {
                 if (bot.pathfinder.isBuilding()) {
                     const blockInHand = bot.heldItem;
@@ -201,14 +191,13 @@ async function minerar(bot, blockId) {
                 }
             } catch (e) { }
         }, 250);
-        const { x, y, z } = block.position; // obtém as coordenadas do bloco
+        const { x, y, z } = block.position;
         const goal = new goals.GoalNear(x, y, z, 1);
         bot.pathfinder.setMovements(defaultMove);
         bot.pathfinder.setGoal(goal);
         bot.pathfinder.tickTimeout = 1;
 
         bot.once('goal_reached', async function () {
-            // Verifica se o bot tem uma picareta no inventário
             const pickaxe = bot.inventory.items().find(item => item.name.includes('pickaxe'));
 
             if (pickaxe) {
@@ -386,6 +375,11 @@ function minecraftColorToHtml(color) {
 }
 
 function processMinecraftCodes(message) {
+    if (typeof message !== 'string') {
+        console.error('message deve ser uma string');
+        return message;
+    }
+
     const colorCodes = {
         '§0': 'black',
         '§1': 'dark_blue',
@@ -694,13 +688,13 @@ function addBlockToChunk(chunk, blockType, position) {
         skyLight: 15,
     };
     chunk.setBlock(position, newBlock);
-    //console.log("bloco adicionado!!!!")
 }
 
 async function head_captcha_solver_2(bot, window) {
     let headCount = 0;
     let urls = {};
     let slots = {};
+    let images = {};
 
     for (let i = 0; i < window.slots.length; i++) {
         let slot = window.slots[i];
@@ -734,14 +728,39 @@ async function head_captcha_solver_2(bot, window) {
 
     process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " } });
 
-    let repeatedUrl = Object.keys(urls).find(url => urls[url] > 1);
+    for (let url in urls) {
+        try {
+            images[url] = await Jimp.read(url);
+        } catch (e) {
+            console.log(`Erro ao carregar a imagem: ${e}`);
+        }
+    }
 
-    if (repeatedUrl) {
-        let slotIndex = slots[repeatedUrl];
+    let uniqueUrl = false;
+    for (let url1 in images) {
+        let isUnique = true;
+        for (let url2 in images) {
+            if (url1 !== url2) {
+                let diff = Jimp.diff(images[url1], images[url2]);
+                if (diff.percent < 0.1) {
+                    isUnique = false;
+                    break;
+                }
+            }
+
+            if (isUnique) {
+                uniqueUrl = url1;
+                break;
+            }
+        }
+    }
+
+    if (uniqueUrl) {
+        let slotIndex = slots[uniqueUrl];
         bot.clickWindow(slotIndex, 0, 0);
-        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " } });
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " } });
     } else {
-        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " } });
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA-2]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " } });
     }
 }
 
@@ -749,6 +768,7 @@ async function head_captcha_solver(bot, window) {
     let headCount = 0;
     let urls = {};
     let slots = {};
+    let images = {};
 
     for (let i = 0; i < window.slots.length; i++) {
         let slot = window.slots[i];
@@ -782,15 +802,40 @@ async function head_captcha_solver(bot, window) {
 
     process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Captcha de cabeça detectado KKKKKKKKKKKKKKKKKKKKKK, que bosta heim, quem que usa isso hoje em dia</span><br/> " } });
 
-    let uniqueUrl = Object.keys(urls).find(url => urls[url] === 1);
+    for (let url in urls) {
+        try {
+            images[url] = await Jimp.read(url);
+        } catch (e) {
+            console.log(`Erro ao carregar a imagem: ${e}`);
+        }
+    }
+
+    let uniqueUrl = false;
+    for (let url1 in images) {
+        let isUnique = true;
+        for (let url2 in images) {
+            if (url1 !== url2) {
+                let diff = Jimp.diff(images[url1], images[url2]);
+                if (diff.percent < 0.1) {
+                    isUnique = false;
+                    break;
+                }
+            }
+
+            if (isUnique) {
+                uniqueUrl = url1;
+                break;
+            }
+        }
+    }
 
     if (uniqueUrl) {
         let slotIndex = slots[uniqueUrl];
         bot.clickWindow(slotIndex, 0, 0);
-        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " } });
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:green'>Pronto eu resolvi esse captcha de bosta ai</span><br/> " } });
     } else {
-        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " } });
-        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Tentando outro metodo...</span><br/> " } });
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:red'>Vish fudeu nao encontrei nenhuma URL unica pra esse captcha fudido</span><br/> " } });
+        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:orange'>[HEADCAPTCHA]</span> <span style='color:yellow'>Tentando outro metodo...</span><br/> " } });
         head_captcha_solver_2(bot, window)
     }
 }
@@ -1110,6 +1155,21 @@ process.on('message', async (process_msg_) => {
             bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
         }
 
+        let handler = {
+            get: function (target, prop, receiver) {
+                if (prop === 'on') {
+                    return function (event, listener) {
+                        return target.on(event, function (...args) {
+                            setTimeout(listener.bind(null, ...args), 1); // diminui o uso de cpu EM MUITO, nao remova se possivel KKKKKKJ
+                        });
+                    };
+                }
+                return Reflect.get(...arguments);
+            }
+        };
+
+        bot = new Proxy(bot, handler);
+
         bot.commandChecks = {}; // por que sim!
 
         bot.loadPlugin(pathfinder)
@@ -1150,27 +1210,23 @@ process.on('message', async (process_msg_) => {
         });
 
         bot.on('connect', async () => {
-            //if (!botsConectado.includes(username)) {
-            //  botsConectado.push(username);
-            //  botsaarray.push(bot); // Add bot to botsaarray when it logs in
             process.send({ type: 'webcontents', event: 'bot-connecting', data: username });
             process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'connecting' } });
 
             console.log("connecting")
-            //}
         })
 
         bot.on('login', () => {
             if (!botsConectado.includes(username)) {
                 botsConectado.push(username);
-                botsaarray.push(bot); // Add bot to botsaarray when it logs in
+                botsaarray.push(bot);
                 process.send({ type: 'webcontents', event: 'botsarraytohtml', data: botsConectado });
                 process.send({ type: 'webcontents', event: 'bot-connected', data: bot.username });
                 process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: bot.username, status: 'connected' } });
 
                 const index = botsSemAutoReconnect.indexOf(username);
                 if (index > -1) {
-                    botsSemAutoReconnect.splice(index, 1); // Remova o bot da lista
+                    botsSemAutoReconnect.splice(index, 1);
                 }
 
                 console.log("logged")
@@ -1290,38 +1346,16 @@ process.on('message', async (process_msg_) => {
                 imagem.toBlob(function (erro, blob) {
                     if (erro) throw erro;
 
-                    // Armazena a imagem na memória como uma string codificada em base64
                     captchaImages[bot.username] = blob.toString('base64');
 
                     process.send({ type: 'electron', action: 'createCaptchaWindow', data: { botusername: bot.username, captchaImage: captchaImages[bot.username] } });
 
-                    captchaImages[bot.username] = null; // deixar memoria zerada ja que daria muito trabalho reenviar de volta e zerar e os caralho, fodase vai ser assim
+                    captchaImages[bot.username] = null; // null memory
                 });
             }
         });
 
         bot.on('error', (err) => {
-            /*const indexConectado = botsConectado.indexOf(username);
-            if (indexConectado > -1) {
-              botsConectado.splice(indexConectado, 1);
-            }
-          
-            const indexArray = botsaarray.indexOf(bot);
-            if (indexArray > -1) {
-              botsaarray.splice(indexArray, 1);
-            }
-          
-            sleep(50); // aqui precisa de sleep pois o como bot ainda esta conectando vai ao mesmo tempo que o disconect tecnicamente, entao nao atualiza o status para disconected
-          
-            if (bot.username == null) {
-              global.mainWindow.webContents.send('bot-disconnected', username)
-              global.mainWindow.webContents.send('update-bot-status', { bot: username, status: 'disconnected' })
-            }
-            else {
-              global.mainWindow.webContents.send('bot-disconnected', bot.username)
-              global.mainWindow.webContents.send('update-bot-status', { bot: bot.username, status: 'disconnected' })
-            }*/
-
             console.log(err)
         })
 
@@ -1333,26 +1367,19 @@ process.on('message', async (process_msg_) => {
                 reasonObj = reason;
             }
 
-            // Initialize an empty string to hold the HTML
             let htmlMessage = '';
 
-            // Add a line break and the kick message at the beginning
             htmlMessage += `<br/><p>Kick:</p>`;
 
-            // Check if the reason object has an 'extra' property
             if (reasonObj.extra) {
-                // This is the third type of data structure
                 let textArray = reasonObj.extra.map(item => item.text ? { text: item.text, color: item.color ? item.color : 'white' } : null);
                 let messages = textArray.filter(item => item && item.text.trim() !== '');
-                // Create a single HTML paragraph element for the messages
                 let hasNewLine = messages.some(message => message.text.includes('\n'));
 
                 messages.forEach((message, index) => {
                     let splitText = message.text.split('\n');
                     splitText.forEach((text, i) => {
                         if (text !== '') {
-                            // Adiciona uma quebra de linha após cada texto, a menos que seja o último e não termine com '\n'
-                            // Se nenhum texto contém '\n', adiciona uma quebra de linha no final de todos os textos
                             let addBreakLine = i < splitText.length - 1 || message.text.endsWith('\n') || !hasNewLine;
 
                             if (index === 0 && i === 0) {
@@ -1364,16 +1391,12 @@ process.on('message', async (process_msg_) => {
                     });
                 });
             } else if (reasonObj.value && reasonObj.value.extra && reasonObj.value.extra.value && reasonObj.value.extra.value.value) {
-                // This is the second type of data structure
                 let textArray = reasonObj.value.extra.value.value.map(item => item.text ? { text: item.text.value, color: item.color ? item.color.value : 'black' } : null);
                 let messages = textArray.filter(item => item && item.text.trim() !== '');
-                // Create a single HTML paragraph element for the messages
                 messages.forEach((message, index) => {
-                    // Split the text by '\n' to handle line breaks
                     let splitText = message.text.split('\n').filter(text => text.trim() !== '');
                     splitText.forEach((text, i) => {
                         if (index === 0 && i === 0) {
-                            // Treat the first message as the title
                             htmlMessage += `<h1 style="color: ${message.color};">${text}</h1>`;
                         } else {
                             htmlMessage += `<p style="color: ${message.color};">${text}</p>`;
@@ -1382,7 +1405,6 @@ process.on('message', async (process_msg_) => {
                 });
             }
             else if (reasonObj.text && reasonObj.color) {
-                // This is the new case we are adding
                 let message = processMinecraftCodes(reasonObj.text);
                 htmlMessage += `<br/><p style="color: ${reasonObj.color};">${message}</p>`;
             }
@@ -1395,8 +1417,10 @@ process.on('message', async (process_msg_) => {
                 htmlMessage += `<br/><p>${message}</p>`;
             }
 
-            // Send the HTML message to the web contents
             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: username, message: htmlMessage } });
+
+            console.log(htmlMessage);
+
 
             const indexConectado = botsConectado.indexOf(username);
             if (indexConectado > -1) {
@@ -1428,7 +1452,6 @@ process.on('message', async (process_msg_) => {
             let fullMessage = processMessage(message);
             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: fullMessage } });
 
-            // Chama a função processClickEvent com a mensagem
             if (ClickTextDetect) {
                 processClickEvent(bot, message);
             }
@@ -1476,8 +1499,6 @@ process.on('message', async (process_msg_) => {
                         const playerFilter = (entity) => (!botsConectado.includes(entity.username) && entity.displayName !== 'Armor Stand');
                         const entity = bot.nearestEntity(playerFilter);
 
-                        console.log(entity);
-
                         if (entity) {
                             bot.lookAt(entity.position.offset(0, entity.height, 0));
                             bot.attack(entity)
@@ -1488,13 +1509,13 @@ process.on('message', async (process_msg_) => {
                     }
                     else if (message.toLowerCase().startsWith("$sethotbarslot ")) {
                         const slotarg = message.split(' ');
-                        const slotNumber = parseInt(slotarg[1]); // extrai o número do slot
+                        const slotNumber = parseInt(slotarg[1]);
 
                         if (isNaN(slotNumber) || slotNumber < 0 || slotNumber > 8) {
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido!</span><br/>` } });
                         }
                         else {
-                            bot.setQuickBarSlot(slotNumber); // define o slot
+                            bot.setQuickBarSlot(slotNumber);
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Slot da Hotbar setado para ${slotNumber}!</span><br/>` } });
                         }
                     }
@@ -1516,23 +1537,23 @@ process.on('message', async (process_msg_) => {
                     }
                     else if (message.toLowerCase().startsWith("$setinventoryslot ")) {
                         const slotarg = message.split(' ');
-                        const slotNumber = parseInt(slotarg[1]); // extrai o número do slot
-                        const action = slotarg[2]; // extrai a ação
+                        const slotNumber = parseInt(slotarg[1]);
+                        const action = slotarg[2];
 
                         if (isNaN(slotNumber)) {
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido!</span><br/>` } });
                         }
                         else if (action === 'drop') {
                             (async () => {
-                                const item = bot.inventory.slots[slotNumber]; // Obtém o item no slot
+                                const item = bot.inventory.slots[slotNumber];
                                 if (item) {
-                                    await bot.tossStack(item); // Solta o item
+                                    await bot.tossStack(item);
                                     process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Dropando no slot do inventario ${slotNumber}!</span><br/>` } });
                                 }
                             })();
                         }
                         else {
-                            bot.clickWindow(slotNumber, 0, 0); // Exemplo de como você pode clicar no slot
+                            bot.clickWindow(slotNumber, 0, 0);
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Clicando no slot do inventario ${slotNumber}!</span><br/>` } })
                         }
                     }
@@ -1550,7 +1571,7 @@ process.on('message', async (process_msg_) => {
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Todos itens dropados!</span><br/>` } })
                         })();
                     }
-                    // O restante do seu código
+
                     else if (message.toLowerCase().startsWith("$inventoryinterface")) {
                         inventorywasopen = !inventorywasopen;
 
@@ -1559,14 +1580,14 @@ process.on('message', async (process_msg_) => {
                                 port: 9531,
                                 startOnLoad: false
                             }
-                            inventoryViewer(bot, options) // Inicie o inventoryViewer aqui
+                            inventoryViewer(bot, options)
                         }
 
                         if (inventorywasopen) {
                             if (!bot.webInventory.isRunning) {
                                 bot.webInventory.start();
                                 process.send({ type: 'electron', action: 'createWebInventoryWindow', data: { bot: bot.username } });
-                                isWindowClosing = false; // Adicione esta linha
+                                isWindowClosing = false;
                                 process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>Interface sendo aberta!</span><br><br/>" } });
                             }
                         } else {
@@ -1581,8 +1602,8 @@ process.on('message', async (process_msg_) => {
                     else if (message.toLowerCase().startsWith("$miner ")) {
                         (async () => {
                             const args = message.split(' ')
-                            const blockId = args[1]; // extrai o ID do bloco do argumento
-                            miningState[bot.username] = !miningState[bot.username]; // Alterna o estado de mineração
+                            const blockId = args[1];
+                            miningState[bot.username] = !miningState[bot.username];
                             if (miningState[bot.username]) {
                                 process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` } })
                             } else {
@@ -1594,8 +1615,8 @@ process.on('message', async (process_msg_) => {
                     else if (message.toLowerCase().startsWith("$miner2 ")) {
                         (async () => {
                             const args = message.split(' ')
-                            const [startX, startY, startZ, endX, endY, endZ] = args.slice(1).map(Number); // extrai as coordenadas dos argumentos
-                            miningState[bot.username] = !miningState[bot.username]; // Alterna o estado de mineração
+                            const [startX, startY, startZ, endX, endY, endZ] = args.slice(1).map(Number);
+                            miningState[bot.username] = !miningState[bot.username];
                             if (miningState[bot.username]) {
                                 process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` } })
                             } else {
@@ -1691,7 +1712,7 @@ process.on('message', async (process_msg_) => {
                     else if (message.toLowerCase().startsWith("$move ")) {
                         const parts = message.split(" ");
                         const directions = parts[1].split("|");
-                        const duration = parts.length > 2 ? parseInt(parts[2]) : 1; // duração padrão em ticks se não especificado
+                        const duration = parts.length > 2 ? parseInt(parts[2]) : 1;
 
                         if (directions == '') {
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:red'>Argumentos invalidos!</span><br/>" } });
@@ -1725,7 +1746,6 @@ process.on('message', async (process_msg_) => {
                                 }
                             });
 
-                            // Desativar os controles após a duração especificada
                             bot.waitForTicks(duration).then(() => {
                                 bot.clearControlStates();
                             });
@@ -1744,7 +1764,7 @@ process.on('message', async (process_msg_) => {
                         }
                     }
                     else if (message.toLowerCase().startsWith("$follow ")) {
-                        const playerName = message.split(" ")[1]; // Obtém o nome do jogador após o comando $follow
+                        const playerName = message.split(" ")[1];
 
                         if (!isFollowing[bot.username]) {
                             const mcData = require('minecraft-data')(bot.version);
@@ -1765,13 +1785,13 @@ process.on('message', async (process_msg_) => {
                                 followInterval[bot.username] = setInterval(() => {
                                     if (playerToFollow[bot.username] && playerToFollow[bot.username].entity && playerToFollow[bot.username].entity.position) {
                                         const goal = new goals.GoalFollow(playerToFollow[bot.username].entity, 1);
-                                        goal.endOnArrival = false; // O bot continuará seguindo mesmo após chegar ao jogador
+                                        goal.endOnArrival = false;
                                         bot.pathfinder.setGoal(goal);
                                         bot.pathfinder.tickTimeout = 1;
                                     }
                                     else {
-                                        clearInterval(followInterval[bot.username]); // Para o intervalo
-                                        bot.pathfinder.setGoal(null); // Para de seguir o jogador
+                                        clearInterval(followInterval[bot.username]);
+                                        bot.pathfinder.setGoal(null);
                                         isFollowing[bot.username] = false;
                                         process.send({
                                             type: 'webcontents', event: 'bot-message', data: {
@@ -1791,8 +1811,8 @@ process.on('message', async (process_msg_) => {
                                 });
                             }
                         } else if (playerToFollow[bot.username] && playerToFollow[bot.username].username === playerName) {
-                            clearInterval(followInterval[bot.username]); // Para o intervalo
-                            bot.pathfinder.setGoal(null); // Para de seguir o jogador
+                            clearInterval(followInterval[bot.username]);
+                            bot.pathfinder.setGoal(null);
                             isFollowing[bot.username] = false;
                             process.send({
                                 type: 'webcontents', event: 'bot-message', data: {
@@ -1817,7 +1837,7 @@ process.on('message', async (process_msg_) => {
     }
     if (process_msg_.event === 'remove-bot') {
         const botUsername = process_msg_.data;
-        botsSemAutoReconnect.push(botUsername); // Adicione o bot à lista
+        botsSemAutoReconnect.push(botUsername);
         const botsaarrayCopy = [...botsaarray];
         botsaarrayCopy.forEach((bot) => {
             if (bot.username == botUsername) {
@@ -1828,8 +1848,6 @@ process.on('message', async (process_msg_) => {
                 }
             }
         });
-
-        await sleep(1);
     }
     if (process_msg_.event === 'reco-bot') {
         const { host, botUsername, version, proxy, proxyType } = process_msg_.data;
@@ -1839,12 +1857,11 @@ process.on('message', async (process_msg_) => {
 
         if (!botExists) {
             process.send({ type: 'ipcMain', event: 'connect-bot', data: { host: host, username: botUsername, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType } });
-            await sleep(1);
         } else {
             const botsaarrayCopy = [...botsaarray];
             botsaarrayCopy.forEach(async (bot) => {
                 if (bot.username == botUsername) {
-                    botsSemAutoReconnect.push(botUsername); // Adicione o bot à lista
+                    botsSemAutoReconnect.push(botUsername);
                     bot.end();
                     const indexConectado = botsConectado.indexOf(botUsername);
                     if (indexConectado > -1) {

@@ -404,7 +404,6 @@
         chatDiv.insertAdjacentHTML('beforeend', `${message}<br>`);
         chatDiv.scrollTop = chatDiv.scrollHeight;
       }
-      await new Promise(resolve => setTimeout(resolve, 1));
     });
 
     ipcRenderer.on('bot-message-all', (event, { message }) => {
@@ -499,7 +498,6 @@
         } else {
           for (const botUsername of botsConectadosHTML) {
             ipcRenderer.send('send-message', { botUsername, message });
-            await new Promise(resolve => setTimeout(resolve, delayBC));
           }
         }
         event.target.value = '';
