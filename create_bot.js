@@ -1155,20 +1155,25 @@ process.on('message', async (process_msg_) => {
             bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
         }
 
-        let handler = {
-            get: function (target, prop, receiver) {
-                if (prop === 'on') {
-                    return function (event, listener) {
-                        return target.on(event, function (...args) {
-                            setTimeout(listener.bind(null, ...args), 1); // diminui o uso de cpu EM MUITO, nao remova se possivel KKKKKKJ
-                        });
-                    };
+        function delayProxy(obj, delay) {
+            return new Proxy(obj, {
+                get(target, prop, receiver) {
+                    const origMethod = target[prop];
+                    if (typeof origMethod === 'function') {
+                        return function (...args) {
+                            setTimeout(() => {
+                                origMethod.apply(target, args);
+                            }, delay);
+                        };
+                    } else if (typeof origMethod === 'object') {
+                        return delayProxy(origMethod, delay);
+                    }
+                    return Reflect.get(...arguments);
                 }
-                return Reflect.get(...arguments);
-            }
-        };
+            });
+        }
 
-        bot = new Proxy(bot, handler);
+        bot = delayProxy(bot, 1);
 
         bot.commandChecks = {}; // por que sim!
 
@@ -1319,11 +1324,14 @@ process.on('message', async (process_msg_) => {
             }
 
             if (autoreconnect) {
+                console.log("auto reconect ativado - esperando 50ms")
                 await sleep(50); // esperar ficar tudo ok para o autoreconnect ? por que esta verificao ? para caso delay do autoreconnect seja 0 ou muito baixo
                 await sleep(autoreconnectdelay); // esperar delay do autoreconnect
+                console.log("auto reconect ativado - esperando " + autoreconnectdelay + "ms")
                 if (!botsConectado.includes(username) && !botsSemAutoReconnect.includes(username)) // por que esta verificacao? para caso o usuario clique em conectar mesmo com o auto reconnect ativo
                 {
-                    ipcMain.emit('connect-bot', null, { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType });
+                    console.log("tentando reconect")
+                    process.send({ type: 'ipcMain', event: 'connect-bot', data: { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType } });
                 }
             }
         })
