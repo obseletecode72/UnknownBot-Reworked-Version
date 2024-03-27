@@ -34,6 +34,10 @@ OBS: Para abrir um cmd na mesma pasta clique ao lado do nome da pasta no "Vazio"
 
 Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e uma versao melhorada para o uso de quebrar blocos pois contem bugs igual eu disse, para instalar isso voce pode substituir o arquivo em ´node_modules\mineflayer\lib\plugins´
 
+## Para que serve o arquivo physics.js?
+
+Alguns antibots fazem algumas verificaçoes adicionais, e este arquivo adiciona estas verificaçoes adicionais para conseguir passar da verificaçao sem problemas, como gravidade, colisao e etc...
+
 ## Plugins
 
 Sistema de plugins adicionado, tambem pode conter bugs, qualquer problema reporte entre em contato no discord, como a API e Mineflayer voce pode verificar a documentacao aqui: https://github.com/PrismarineJS/mineflayer/blob/master/docs/api.md
