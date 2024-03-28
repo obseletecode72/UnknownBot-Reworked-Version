@@ -38,6 +38,10 @@ Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e um
 
 Alguns antibots fazem algumas verificaçoes adicionais, e este arquivo adiciona estas verificaçoes adicionais para conseguir passar da verificaçao sem problemas, como gravidade, colisao e etc...
 
+## Para que serve o arquivo entities.js?
+
+Dar compatibilidade para o arquivo physics.js, se quiser usar o physics use o entities tambem (OBRIGATORIO)
+
 ## Plugins
 
 Sistema de plugins adicionado, tambem pode conter bugs, qualquer problema reporte entre em contato no discord, como a API e Mineflayer voce pode verificar a documentacao aqui: https://github.com/PrismarineJS/mineflayer/blob/master/docs/api.md
