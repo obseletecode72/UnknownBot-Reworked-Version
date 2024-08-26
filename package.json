@@ -1,7 +1,7 @@
 {
   "name": "UnknownBot",
   "version": "3.3.0",
-  "description": "Meu projeto Electron",
+  "description": "Bot mt pica",
   "main": "index.js",
   "author": "win32k_sys",
   "dependencies": {
