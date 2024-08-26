@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Logs</title>
+    <style>
+      body {
+        background-color: #2e2c29;
+        color: #ffffff;
+        font-family: monospace;
+        margin: 0;
+        padding: 0;
+      }
+      .title-bar {
+        -webkit-app-region: drag; /* Permite arrastar a janela */
+        height: 30px;
+        background-color: #1a1a1a;
+      }
+      .title-bar h2 {
+        color: white;
+        margin: 0;
+        padding: 5px 10px;
+        font-size: 16px;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="title-bar">
+      <h2>Logs</h2>
+    </div>
+    <pre id="logContainer"></pre>
+
+    <script>
+      const { ipcRenderer } = require('electron');
+      const logContainer = document.getElementById('logContainer');
+
+      ipcRenderer.on('log', (event, message) => {
+        logContainer.textContent += message + '\n';
+      });
+    </script>
+  </body>
+</html>

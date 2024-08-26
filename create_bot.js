@@ -1,13 +1,17 @@
+const mineflayer = require('mineflayer');
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
+const { GoalBlock } = goals;
+const inventoryViewer = require('mineflayer-web-inventory')
+const collectBlock = require('mineflayer-collectblock').plugin
+const toolPlugin = require('mineflayer-tool').plugin
+var Vec3 = require('vec3');
+
 const dns = require('dns');
 const util = require('util');
-const mineflayer = require('mineflayer')
 const Http = require('http')
 const ProxyAgent = require('proxy-agent')
-const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
-var Vec3 = require('vec3');
 const atob = require('atob');
 var Socks = require('socks').SocksClient;
-const inventoryViewer = require('mineflayer-web-inventory')
 const PNGImage = require('pngjs-image');
 const fs = require('fs');
 const path = require('path');
@@ -27,11 +31,18 @@ process.on('unhandledRejection', (reason, promise) => {
     }
 });
 
+// Handler global para exceções não tratadas
+process.on('uncaughtException', (err) => {
+    process.send({ type: 'error', data: 'Exceção não tratada capturada: ' + err.message });
+    process.send({ type: 'error', data: 'Stack: ' + err.stack });
+    // Continuar a execução do programa (não faz nada aqui)
+});
+
 let bots = {};
 var botsConectado = [];
 let botsaarray = []
 let botsSemAutoReconnect = [];
-
+const botTimers = {}; // Objeto para armazenar timers e estados de conexão dos bots
 
 // killaura part
 var killAuraActive = {}
@@ -54,11 +65,6 @@ var playerToFollow = {};
 var followInterval = {};
 // follow part
 
-// pesca part
-var PescaActive = {};
-// pesca part
-
-
 // miner part
 let swingInterval = {};
 var miningState = {};
@@ -68,6 +74,7 @@ let placedBlocks = new Set();
 const ipPortRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]+$/;
 let record = {};
 let autoreconnect = false;
+let fallcheckbypass = false;
 let autoreconnectdelay = 0;
 let mcData;
 
@@ -76,14 +83,13 @@ let captchaImages = {};
 const resolveSrv = util.promisify(dns.resolveSrv);
 const lookup = util.promisify(dns.lookup);
 
-global.listadecommandos = ["$killaura", "$pesca", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
+global.listadecommandos = ["$killaura", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
 global.Syntax = `
 <span style="color:yellow">Lista de comandos existentes:</span><br/>
 <span style="color:white">- KillAura, Ataca todas entidades ao redor:</span> <span style="color:orange">$killaura</span><br/>
 <span style="color:white">- Follow, Segue algum jogador pelo nome:</span> <span style="color:orange">$follow [nome]</span><br/>
 <span style="color:white">- Miner, Minera blocos pelo nome do bloco:</span> <span style="color:orange">$miner [bloco]</span><br/>
 <span style="color:white">- Miner2, Minera blocos de coordenada tal ate coordenada tal:</span> <span style="color:orange">$miner2 [x] [y] [z] [x2] [y2] [z2]</span><br/>
-<span style="color:white">- Pesca, Pesca automaticamente:</span> <span style="color:orange">$pesca</span><br/>
 <span style="color:white">- Goto, Anda ate as coordenadas fornecidas:</span> <span style="color:orange">$goto [x] [y] [z]</span><br/>
 <span style="color:white">- Shift, Fica agachado:</span> <span style="color:orange">$shift</span><br/>
 <span style="color:white">- SetHotBarSlot, Seta o slot da sua hotbar para o fornecido (0-8):</span> <span style="color:orange">$sethotbarslot [numero]</span><br/>
@@ -100,6 +106,68 @@ global.Syntax = `
 let ClickTextDetect = false;
 let textFromFile = '';
 
+function calculateDistance(pos1, pos2) {
+    const dx = pos1.x - pos2.x;
+    const dy = pos1.y - pos2.y;
+    const dz = pos1.z - pos2.z;
+    return Math.sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+function findNearestEntity(bot, onlyplayer) {
+    let nearestEntity = null;
+    let nearestDistance = Infinity;
+
+    for (const entityId in bot.entities) {
+        const entity = bot.entities[entityId];
+
+        if (entity === undefined) { // idk why some entities are undefined, thats so cringe
+            continue;
+        }
+
+        if (entity === bot.entity || 
+            entity.id === bot.entity.id || 
+            (entity.username && entity.username === bot.username)) {
+            continue;
+        }
+
+        if(onlyplayer)
+        {
+            if(entity.type !== 'player')
+            {
+                continue;
+            }
+        }
+        if(entity.type === 'player')
+        {
+            if(botsConectado.includes(entity.username))
+            {
+                continue;
+            }
+        }
+        
+
+        if (entity.position) {
+            try {
+                const distance = calculateDistance(bot.entity.position, entity.position);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestEntity = entity;
+                }
+            } catch (error) { }
+        }
+    }
+
+    return nearestEntity;
+}
+
+function distanceTo(position1, position2) {
+    const dx = position1.x - position2.x;
+    const dy = position1.y - position2.y;
+    const dz = position1.z - position2.z;
+
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
 function processClickEvent(bot, message) {
     if (message && message.json && Array.isArray(message.json.extra)) {
         message.json.extra.forEach((extra) => {
@@ -113,215 +181,164 @@ function processClickEvent(bot, message) {
     }
 }
 
-async function pesca(bot) {
-    const itemVaraDePesca = bot.inventory.items().find(item => item.name === 'fishing_rod');
-
-    if (itemVaraDePesca) {
-        await bot.equip(itemVaraDePesca, 'hand');
-    } else {
-        global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Vara de pesca não encontrada no inventário.</span><br/>" })
-        return;
-    }
-
-    const blocoAgua = bot.findBlock({
-        matching: ['water', 'flowing_water'].map(name => mcData.blocksByName[name].id),
-        maxDistance: 8,
-    });
-
-    if (blocoAgua) {
-        await bot.lookAt(blocoAgua.position.offset(0, 1, 0));
-
-        const entity = bot.nearestEntity();
-
-        if (entity && bot.entity.position.distanceTo(entity.position) < 1) {
-            global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Esperando a entidade sair...</span><br/>" })
-            bot.once('entityGone', async () => {
-                await pesca(bot);
-            });
-        } else {
-            await bot.fish();
-
-            if (PescaActive[bot.username]) {
-                await pesca(bot);
-            }
-        }
-    } else {
-        global.mainWindow.webContents.send('bot-message', { bot: bot.username, message: "<br/><span style='color:red'>Nenhum bloco de água encontrado nas proximidades.</span><br/>" })
-    }
-}
-
-async function onDiggingCompleted(bot, err) {
-    if (err) {
-        console.log(`Erro ao minerar o bloco: ${err.message}`);
-    } else {
-        console.log('Bloco minerado com sucesso.');
-        clearInterval(swingInterval[bot.username]);
-    }
-}
-
-async function minerar(bot, blockId) {
+async function minerar(bot, blockType) {
+    // Verifica se a mineração foi interrompida antes de começar
     if (!miningState[bot.username]) {
         return;
     }
 
     const mcData = require('minecraft-data')(bot.version);
-    const defaultMove = new Movements(bot, mcData);
+    const blockToMine = mcData.blocksByName[blockType];
+    if (!blockToMine) {
+        process.send({ type: 'log', data: 'Não conheço o bloco ' + blockType});
+        return;
+    }
 
     const block = bot.findBlock({
-        matching: mcData.blocksByName[blockId].id,
+        matching: blockToMine.id,
         maxDistance: 16,
     });
 
-    if (block) {
-        swingInterval[bot.username] = setInterval(async () => {
-            try {
-                if (bot.pathfinder.isBuilding()) {
-                    const blockInHand = bot.heldItem;
-
-                    if (blockInHand) {
-                        const lookAtBlockPos = bot.blockAtCursor();
-                        if (lookAtBlockPos && lookAtBlockPos.position) {
-                            const blockPosStr = lookAtBlockPos.position.toString();
-                            if (!placedBlocks.has(blockPosStr)) {
-                                await bot.placeBlock(bot.blockAt(lookAtBlockPos.position), new Vec3(0, 1, 0)).catch();
-                                placedBlocks.add(blockPosStr);
-                            }
-                        }
-                    }
-                }
-            } catch (e) { }
-        }, 250);
-        const { x, y, z } = block.position;
-        const goal = new goals.GoalNear(x, y, z, 1);
-        bot.pathfinder.setMovements(defaultMove);
-        bot.pathfinder.setGoal(goal);
-        bot.pathfinder.tickTimeout = 1;
-
-        bot.once('goal_reached', async function () {
-            const pickaxe = bot.inventory.items().find(item => item.name.includes('pickaxe'));
-
-            if (pickaxe) {
-                bot.equip(pickaxe, 'hand');
-            }
-
-            if (bot.canDigBlock(block)) {
-                await bot.dig(block, () => onDiggingCompleted(bot));
-                await minerar(bot, blockId)
-            }
-        });
-    } else {
+    if (!block) {
+        process.send({ type: 'log', data: 'Não encontrei nenhum bloco de ' + blockType + 'próximo.'});
+        miningState[bot.username] = false;
         return;
     }
-}
 
-async function chooseTool(bot, block) {
-    const mcData = require('minecraft-data')(bot.version);
-    const hardness = mcData.blocksByName[block.name].hardness;
+    process.send({ type: 'log', data: 'Encontrei um bloco de ' + blockType + '.' + ' Começando a minerar.'});
 
-    let tool;
-    if (hardness < 0.8) {
-        tool = getBestTool(bot, 'shovel');
-    } else if (hardness < 1.5) {
-        tool = getBestTool(bot, 'pickaxe');
-    } else {
-        tool = null;
-    }
+    const miningPromise = bot.collectBlock.collect(block);
 
-    if (tool) {
-        await bot.equip(tool, 'hand');
-    }
-}
-
-function getBestTool(bot, toolType) {
-    const materials = ['wooden', 'stone', 'iron', 'diamond', 'netherite'];
-    let bestTool = null;
-    let maxEnchantmentLevel = -1;
-
-    for (let i = materials.length - 1; i >= 0; i--) {
-        const tools = bot.inventory.items().filter(item => item.name.includes(materials[i]) && item.name.includes(toolType));
-        for (const tool of tools) {
-            const enchantmentLevel = getEnchantmentLevel(tool);
-            if (enchantmentLevel > maxEnchantmentLevel || (enchantmentLevel === maxEnchantmentLevel && !bestTool)) {
-                maxEnchantmentLevel = enchantmentLevel;
-                bestTool = tool;
-            }
+    // Verifica continuamente se o estado mudou para interromper a mineração
+    const checkInterval = setInterval(() => {
+        if (!miningState[bot.username]) {
+            bot.pathfinder.setGoal(null);  // Interrompe o pathfinding
+            clearInterval(checkInterval);  // Limpa o intervalo de verificação
         }
+    }, 100); // Verifica a cada 100ms
+
+    try {
+        await miningPromise;
+        clearInterval(checkInterval); // Limpa o intervalo ao finalizar a mineração
+        if (miningState[bot.username]) {
+            process.send({ type: 'log', data: 'Minerado um bloco de ' + blockType + '.'});
+            minerar(bot, blockType);  // Continua minerando o próximo bloco
+        }
+    } catch (err) {
+        process.send({ type: 'error', data: JSON.stringify(err)});
+        miningState[bot.username] = false;
+        clearInterval(checkInterval);
     }
-    return bestTool;
 }
 
-function getEnchantmentLevel(item) {
-    if (!item.nbt || !item.nbt.value || !item.nbt.value.Enchantments) {
-        return 0;
-    }
-    let level = 0;
-    for (const enchantment of item.nbt.value.Enchantments.value.value) {
-        level += enchantment.lvl.value;
-    }
-    return level;
-}
+var globalParkourMode = false;
+var globalBlockPlacingAllowed = true;
 
 async function minerar2(bot, x1, y1, z1, x2, y2, z2) {
     if (!miningState[bot.username]) {
         return;
     }
 
-    const mcData = require('minecraft-data')(bot.version);
-    const defaultMove = new Movements(bot, mcData);
+    // Garante que x1 <= x2, y1 <= y2, z1 <= z2
+    [x1, x2] = [Math.min(x1, x2), Math.max(x1, x2)];
+    [y1, y2] = [Math.min(y1, y2), Math.max(y1, y2)];
+    [z1, z2] = [Math.min(z1, z2), Math.max(z1, z2)];
 
-    let blocks = [];
+    // Percorre todos os blocos na área especificada
+    for (let x = x1; x <= x2; x++) {
+        for (let y = y1; y <= y2; y++) {
+            for (let z = z1; z <= z2; z++) {
+                if (!miningState[bot.username]) {
+                    return;
+                }
 
-    for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
-        for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
-            for (let z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
                 const block = bot.blockAt(new Vec3(x, y, z));
-                if (block && bot.canDigBlock(block)) {
-                    blocks.push(block);
+                if (block && block.name !== 'air') {
+                    await minerarBloco(bot, block);
                 }
             }
         }
     }
 
-    blocks.sort((a, b) => bot.entity.position.distanceTo(a.position) - bot.entity.position.distanceTo(b.position));
+    process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Mineraçao concluida!</span><br/>` } });
+}
 
-    if (blocks.length === 0) {
-        console.log('Não há mais blocos dentro das coordenadas fornecidas.');
+async function minerarBloco(bot, block) {
+    // Configura o pathfinder
+    const mcData = require('minecraft-data')(bot.version);
+    const defaultMove = new Movements(bot, mcData);
+    defaultMove.allowParkour = globalParkourMode;
+    if(!globalBlockPlacingAllowed)
+    {
+        defaultMove.placeCost = Number.MAX_SAFE_INTEGER;
+    }
+
+    bot.pathfinder.setMovements(defaultMove);
+
+    // Define o objetivo como uma posição próxima ao bloco
+    const goal = new goals.GoalNear(block.position.x, block.position.y, block.position.z, 3);
+
+    // Move até o bloco
+    try {
+        await bot.pathfinder.goto(goal);
+    } catch (error) {
+        process.send({ type: 'error', data: 'Não foi possível alcançar o bloco em: ' + block.position + ': ' + error});
         return;
     }
 
-    const block = blocks.shift();
-    const { x, y, z } = block.position;
-    const goal = new goals.GoalNear(x, y, z, 1);
-    bot.pathfinder.setMovements(defaultMove);
-    bot.pathfinder.setGoal(goal);
-    bot.pathfinder.tickTimeout = 1;
+    // Minera o bloco
+    try {
+        await bot.tool.equipForBlock(block, {});
+        await bot.dig(block);
+        process.send({ type: 'log', data: 'Bloco minerado em ' + block.position});
+    } catch (error) {
+        process.send({ type: 'error', data: 'Erro ao minerar o bloco em' + block.position + ' : ' + error});
+    }
+}
 
-    swingInterval[bot.username] = setInterval(async () => {
-        try {
-            if (bot.pathfinder.isBuilding()) {
-                const blockInHand = bot.heldItem;
+// Função para iniciar a mineração
+function iniciarMineracao(bot, x1, y1, z1, x2, y2, z2) {
+    miningState[bot.username] = true;
+    minerar2(bot, x1, y1, z1, x2, y2, z2);
+}
 
-                if (blockInHand) {
-                    const lookAtBlockPos = bot.blockAtCursor();
-                    if (lookAtBlockPos && lookAtBlockPos.position) {
-                        const blockPosStr = lookAtBlockPos.position.toString();
-                        if (!placedBlocks.has(blockPosStr)) {
-                            await bot.placeBlock(bot.blockAt(lookAtBlockPos.position), new Vec3(0, 1, 0)).catch();
-                            placedBlocks.add(blockPosStr);
-                        }
-                    }
-                }
-            }
-        } catch (e) { }
-    }, 250);
+// Função para parar a mineração
+function pararMineracao(bot) {
+    miningState[bot.username] = false;
+}
 
-    bot.on('goal_reached', async function () {
-        await chooseTool(bot, block);
-        if (bot.canDigBlock(block)) {
-            await bot.dig(block, () => onDiggingCompleted(bot));
-            await minerar2(bot, x1, y1, z1, x2, y2, z2)
-        }
-    });
+function processMinecraftCodes(message) {
+    if (typeof message !== 'string') {
+        process.send({ type: 'error', data: 'message deve ser uma string' });
+        return message;
+    }
+
+    const colorCodes = {
+        '§0': 'black',
+        '§1': 'dark_blue',
+        '§2': 'dark_green',
+        '§3': 'dark_aqua',
+        '§4': 'dark_red',
+        '§5': 'dark_purple',
+        '§6': 'gold',
+        '§7': 'gray',
+        '§8': 'dark_gray',
+        '§9': 'blue',
+        '§a': 'green',
+        '§b': 'aqua',
+        '§c': 'red',
+        '§d': 'light_purple',
+        '§e': 'yellow',
+        '§f': 'white'
+    };
+
+    for (let code in colorCodes) {
+        let regex = new RegExp(code, 'g');
+        message = message.replace(regex, `<span style="color:${colorCodes[code]}">`);
+        message = message.replace(/§r/g, '</span>');
+    }
+
+    return message;
 }
 
 function escapeHtml(unsafe) {
@@ -374,59 +391,59 @@ function minecraftColorToHtml(color) {
     return colorMap[color] || color;
 }
 
-function processMinecraftCodes(message) {
-    if (typeof message !== 'string') {
-        console.error('message deve ser uma string');
-        return message;
-    }
-
-    const colorCodes = {
-        '§0': 'black',
-        '§1': 'dark_blue',
-        '§2': 'dark_green',
-        '§3': 'dark_aqua',
-        '§4': 'dark_red',
-        '§5': 'dark_purple',
-        '§6': 'gold',
-        '§7': 'gray',
-        '§8': 'dark_gray',
-        '§9': 'blue',
-        '§a': 'green',
-        '§b': 'aqua',
-        '§c': 'red',
-        '§d': 'light_purple',
-        '§e': 'yellow',
-        '§f': 'white'
-    };
-
-    for (let code in colorCodes) {
-        let regex = new RegExp(code, 'g');
-        message = message.replace(regex, `<span style="color:${colorCodes[code]}">`);
-        message = message.replace(/§r/g, '</span>');
-    }
-
-    return message;
-}
 
 function processMessage(message) {
-    let fullMessage = message.text ? escapeHtml(message.text) : '';
-    if (fullMessage.includes('§l')) {
-        let parts = fullMessage.split('§l');
-        let boldParts = parts[1].split(' ');
-        boldParts[0] = `<strong>${boldParts[0]}</strong>`;
-        parts[1] = boldParts.join(' ');
-        fullMessage = parts.join('');
+    if (typeof message === 'string') {
+        return escapeHtml(message);
     }
-    fullMessage = processMinecraftCodes(fullMessage);
-    let htmlColor = minecraftColorToHtml(message.color);
-    let fontWeight = message.bold ? 'bold' : 'normal';
-    if (message.extra) {
+
+    if (message.translate) {
+        return processTranslate(message);
+    }
+
+    let fullMessage = message.text ? escapeHtml(message.text) : '';
+
+    if (Array.isArray(message.extra)) {
         message.extra.forEach((extraMessage) => {
-            let extraFullMessage = extraMessage.text.includes('§l') ? `<strong>${processMessage(extraMessage)}</strong>` : processMessage(extraMessage);
-            fullMessage += ` <span style="color:${minecraftColorToHtml(extraMessage.color)}; font-weight:${extraMessage.bold ? 'bold' : 'normal'};">${extraFullMessage}</span>`;
+            fullMessage += ' ' + processMessage(extraMessage);
         });
     }
-    return `<span style="color:${htmlColor}; font-weight:${fontWeight};">${fullMessage}</span>`;
+
+    let color = message.color ? `color: ${minecraftColorToHtml(message.color)};` : '';
+    let fontWeight = message.bold ? 'font-weight: bold;' : '';
+
+    return `<span style="${color}${fontWeight}">${fullMessage}</span>`;
+}
+
+function processTranslate(message) {
+    // Process translation key
+    let template = message.translate || '';
+    let parts = [];
+
+    if (Array.isArray(message.with)) {
+        parts = message.with.map(part => {
+            if (typeof part === 'object' && part.text) {
+                let hover = part.hoverEvent ? ` data-hover="${escapeHtml(JSON.stringify(part.hoverEvent))}"` : '';
+                let click = part.clickEvent ? ` data-click="${escapeHtml(JSON.stringify(part.clickEvent))}"` : '';
+                return `<span${hover}${click}>${escapeHtml(part.text)}</span>`;
+            }
+            return escapeHtml(String(part));
+        });
+    }
+
+    // Replace placeholders with actual parts
+    let result = template.replace(/%s/g, () => parts.shift() || '');
+
+    // If there's no template, just join the parts
+    if (!template && parts.length > 0) {
+        result = parts.join(' ');
+    }
+
+    // Handle color if present
+    let color = message.color ? `color: ${minecraftColorToHtml(message.color)};` : '';
+
+    // Wrap the result in a span for styling
+    return `<span class="minecraft-message" style="${color}">${result}</span>`;
 }
 
 function processTitle(title) {
@@ -675,19 +692,35 @@ async function getSRVRecord(domain) {
             };
         }
     } catch (err) {
-        console.error(err);
+        process.send({ type: 'error', data: err});
     }
     return null;
 }
 
 function addBlockToChunk(chunk, blockType, position) {
+    if (!chunk) {
+        process.send({ type: 'error', data: 'Chunk is undefined.'});
+        return;
+    }
+    if (typeof chunk.setBlock !== 'function') {
+        process.send({ type: 'error', data: 'Chunk does not have a setBlock method.'});
+        return;
+    }
+
+    // Verifique a estrutura esperada pelo método setBlock
     const newBlock = {
         type: blockType,
-        metadata: 0,
-        light: 15,
-        skyLight: 15,
+        metadata: 0,  // Ajuste conforme necessário
+        light: 15,    // Ajuste conforme necessário
+        skyLight: 15, // Ajuste conforme necessário
     };
-    chunk.setBlock(position, newBlock);
+
+    try {
+        // Aqui, assumimos que setBlock aceita (x, y, z, block)
+        chunk.setBlock(position.x, position.y, position.z, newBlock);
+    } catch (error) {
+        process.send({ type: 'error', data: 'Error while setting block in chunk: ' + error});
+    }
 }
 
 async function head_captcha_solver_2(bot, window) {
@@ -715,7 +748,7 @@ async function head_captcha_solver_2(bot, window) {
                             slots[url] = i;
                         }
                     } catch (e) {
-                        console.log(`Erro ao analisar a string decodificada em JSON: ${e}`);
+                        process.send({ type: 'error', data: 'Erro ao analisar a string decodificada em JSON: ' + e});
                     }
                 }
             }
@@ -732,7 +765,7 @@ async function head_captcha_solver_2(bot, window) {
         try {
             images[url] = await Jimp.read(url);
         } catch (e) {
-            console.log(`Erro ao carregar a imagem: ${e}`);
+            process.send({ type: 'error', data: 'Erro ao carregar a imagem: ' + e});
         }
     }
 
@@ -789,7 +822,7 @@ async function head_captcha_solver(bot, window) {
                             slots[url] = i;
                         }
                     } catch (e) {
-                        console.log(`Erro ao analisar a string decodificada em JSON: ${e}`);
+                        process.send({ type: 'error', data: 'Erro ao analisar a string decodificada em JSON: ' + e});
                     }
                 }
             }
@@ -806,7 +839,7 @@ async function head_captcha_solver(bot, window) {
         try {
             images[url] = await Jimp.read(url);
         } catch (e) {
-            console.log(`Erro ao carregar a imagem: ${e}`);
+            process.send({ type: 'error', data: 'Erro ao carregar a imagem: ' + e});
         }
     }
 
@@ -858,8 +891,8 @@ process.on('message', async (process_msg_) => {
 
             if ((proxyType === '4' || proxyType === '5')) {
                 if (!user && !password) {
-                    console.log("proxy, no pass, no user, type: " + proxyType);
-                    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+                    process.send({ type: 'log', data: 'proxy, no pass, no user, type: ' + proxyType });
+                    process.send({ type: 'log', data: 'targeted proxy: ' + proxy.ip + ":" + proxy.port});
                     if (ipPortRegex.test(host)) {
                         const [ip, port] = host.split(':');
                         record.ip = ip;
@@ -867,7 +900,7 @@ process.on('message', async (process_msg_) => {
                     } else {
                         record = await getSRVRecord(host);
                         if (!record) {
-                            console.log('SRV Record nao encontrado, bot anulado... ');
+                            process.send({ type: 'error', data: 'SRV Record nao encontrado, bot anulado...'});
                             return;
                         }
                     }
@@ -886,7 +919,7 @@ process.on('message', async (process_msg_) => {
                                 }
                             }, (err, info) => {
                                 if (err) {
-                                    console.log(err)
+                                    process.send({ type: 'error', data: err });
                                     return
                                 }
                                 client.setSocket(info.socket)
@@ -897,8 +930,9 @@ process.on('message', async (process_msg_) => {
                         version: version
                     });
                 } else if (user && !password) {
-                    console.log("proxy, no pass, type: " + proxyType)
-                    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+                    process.send({ type: 'log', data: 'proxy, no pass, type: ' + proxyType });
+                    process.send({ type: 'log', data: 'targeted proxy: ' + proxy.ip + ":" + proxy.port});
+
                     if (ipPortRegex.test(host)) {
                         const [ip, port] = host.split(':');
                         record.ip = ip;
@@ -906,7 +940,7 @@ process.on('message', async (process_msg_) => {
                     } else {
                         record = await getSRVRecord(host);
                         if (!record) {
-                            console.log('SRV Record nao encontrado, bot anulado... ');
+                            process.send({ type: 'error', data: 'SRV Record nao encontrado, bot anulado...'});
                             return;
                         }
                     }
@@ -926,7 +960,7 @@ process.on('message', async (process_msg_) => {
                                 }
                             }, (err, info) => {
                                 if (err) {
-                                    console.log(err)
+                                    process.send({ type: 'error', data: err});
                                     return
                                 }
                                 client.setSocket(info.socket)
@@ -937,8 +971,10 @@ process.on('message', async (process_msg_) => {
                         version: version
                     });
                 } else if (user && password) {
-                    console.log("proxy, type: " + proxyType)
-                    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+
+                    process.send({ type: 'log', data: 'proxy, type: ' + proxyType});
+                    process.send({ type: 'log', data: 'targeted proxy: ' + proxy.ip + ":" + proxy.port});
+
                     if (ipPortRegex.test(host)) {
                         const [ip, port] = host.split(':');
                         record.ip = ip;
@@ -946,7 +982,7 @@ process.on('message', async (process_msg_) => {
                     } else {
                         record = await getSRVRecord(host);
                         if (!record) {
-                            console.log('SRV Record nao encontrado, bot anulado... ');
+                            process.send({ type: 'error', data: 'SRV Record nao encontrado, bot anulado...'});
                             return;
                         }
                     }
@@ -967,7 +1003,7 @@ process.on('message', async (process_msg_) => {
                                 }
                             }, (err, info) => {
                                 if (err) {
-                                    console.log(err)
+                                    process.send({ type: 'error', data: err});
                                     return
                                 }
                                 client.setSocket(info.socket)
@@ -980,8 +1016,10 @@ process.on('message', async (process_msg_) => {
                 }
             } else if (proxyType === 'http') {
                 if (!user && !password) {
-                    console.log("proxy, no pass, no user, type: " + proxyType)
-                    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+
+                    process.send({ type: 'log', data: 'proxy, no pass, no user, type: ' + proxyType});
+                    process.send({ type: 'log', data: 'targeted proxy: ' + proxy.ip + ":" + proxy.port});
+                    
                     if (ipPortRegex.test(host)) {
                         const [ip, port] = host.split(':');
                         record.ip = ip;
@@ -989,7 +1027,7 @@ process.on('message', async (process_msg_) => {
                     } else {
                         record = await getSRVRecord(host);
                         if (!record) {
-                            console.log('SRV Record nao encontrado, bot anulado... ');
+                            process.send({ type: 'error', data: 'SRV Record nao encontrado, bot anulado...'});
                             return;
                         }
                     }
@@ -1010,7 +1048,7 @@ process.on('message', async (process_msg_) => {
                             })
 
                             req.on('error', (err) => {
-                                console.log(err);
+                                process.send({ type: 'error', data: err});
                                 const indexConectado = botsConectado.indexOf(username);
                                 if (indexConectado > -1) {
                                     botsConectado.splice(indexConectado, 1);
@@ -1031,8 +1069,9 @@ process.on('message', async (process_msg_) => {
                         version: version
                     })
                 } else if (user && !password) {
-                    console.log("proxy, no pass, type: " + proxyType)
-                    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+                    process.send({ type: 'log', data: 'proxy, no pass, type: ' + proxyType});
+                    process.send({ type: 'log', data: 'targeted proxy: ' + proxy.ip + ":" + proxy.port});
+
                     if (ipPortRegex.test(host)) {
                         const [ip, port] = host.split(':');
                         record.ip = ip;
@@ -1040,7 +1079,7 @@ process.on('message', async (process_msg_) => {
                     } else {
                         record = await getSRVRecord(host);
                         if (!record) {
-                            console.log('SRV Record nao encontrado, bot anulado... ');
+                            process.send({ type: 'error', data: 'SRV Record nao encontrado, bot anulado...'});
                             return;
                         }
                     }
@@ -1064,7 +1103,7 @@ process.on('message', async (process_msg_) => {
                             })
 
                             req.on('error', (err) => {
-                                console.log(err);
+                                process.send({ type: 'error', data: err});
                                 const indexConectado = botsConectado.indexOf(username);
                                 if (indexConectado > -1) {
                                     botsConectado.splice(indexConectado, 1);
@@ -1090,8 +1129,9 @@ process.on('message', async (process_msg_) => {
                         version: version
                     })
                 } else if (user && password) {
-                    console.log("proxy, type: " + proxyType)
-                    console.log("targeted proxy: " + proxy.ip + ":" + proxy.port);
+                    process.send({ type: 'log', data: 'proxy, type: ' + proxyType});
+                    process.send({ type: 'log', data: 'targeted proxy: ' + proxy.ip + ":" + proxy.port});
+
                     if (ipPortRegex.test(host)) {
                         const [ip, port] = host.split(':');
                         record.ip = ip;
@@ -1099,7 +1139,7 @@ process.on('message', async (process_msg_) => {
                     } else {
                         record = await getSRVRecord(host);
                         if (!record) {
-                            console.log('SRV Record nao encontrado, bot anulado... ');
+                            process.send({ type: 'error', data: 'SRV Record nao encontrado, bot anulado...'});
                             return;
                         }
                     }
@@ -1123,7 +1163,7 @@ process.on('message', async (process_msg_) => {
                             })
 
                             req.on('error', (err) => {
-                                console.log(err);
+                                process.send({ type: 'error', data: err});
                                 const indexConectado = botsConectado.indexOf(username);
                                 if (indexConectado > -1) {
                                     botsConectado.splice(indexConectado, 1);
@@ -1151,90 +1191,91 @@ process.on('message', async (process_msg_) => {
                 }
             }
         } else {
-            console.log("bot without proxy")
+            process.send({ type: 'log', data: 'bot without proxy'});
             bot = mineflayer.createBot({ host, username, version: version, auth: 'offline' });
         }
 
-        function delayProxy(obj, delay) {
-            return new Proxy(obj, {
-                get(target, prop, receiver) {
-                    const origMethod = target[prop];
-                    if (typeof origMethod === 'function') {
-                        return function (...args) {
-                            setTimeout(() => {
-                                origMethod.apply(target, args);
-                            }, delay);
-                        };
-                    } else if (typeof origMethod === 'object') {
-                        return delayProxy(origMethod, delay);
-                    }
-                    return Reflect.get(...arguments);
-                }
-            });
-        }
-
-        bot = delayProxy(bot, 1);
-
         bot.commandChecks = {}; // por que sim!
 
-        bot.loadPlugin(pathfinder)
+        bot.on('spawn', async () => {
+            bot.loadPlugin(pathfinder);
+            bot.loadPlugin(collectBlock);
+            bot.loadPlugin(toolPlugin);
 
-        const pluginDir = path.resolve(__dirname, './pluginsUBBOT');
-
-        fs.access(pluginDir, fs.constants.F_OK, async (err) => {
-            if (err) {
-                console.error(`Diretório ${pluginDir} não existe.`);
-                return;
-            }
-
-            fs.readdir(pluginDir, async (err, files) => {
+            const pluginDir = path.resolve(__dirname, './pluginsUBBOT');
+    
+            fs.access(pluginDir, fs.constants.F_OK, async (err) => {
                 if (err) {
-                    console.error('Não foi possível ler o diretório de plugins:', err);
+                    process.send({ type: 'error', data: 'Diretório ' + pluginDir + ' não existe.'});
                     return;
                 }
-
-                if (files.length === 0) {
-                    console.log('Nenhum plugin para carregar.');
-                    return;
-                }
-
-                for (let file of files) {
-                    if (path.extname(file) === '.js') {
-                        console.log(`Carregando plugin: ${file}`);
-                        try {
-                            const pluginPath = path.resolve(pluginDir, file);
-                            const pluginUrl = url.pathToFileURL(pluginPath);
-                            const plugin = await import(pluginUrl);
-                            bot.loadPlugin(plugin.default);
-                        } catch (err) {
-                            console.error(`Erro ao carregar o plugin ${file}:`, err);
+    
+                fs.readdir(pluginDir, async (err, files) => {
+                    if (err) {
+                        process.send({ type: 'error', data: 'Não foi possível ler o diretório de plugins: ' + err});
+                        return;
+                    }
+    
+                    if (files.length === 0) {
+                        process.send({ type: 'log', data: 'Nenhum plugin para carregar.' });
+                        return;
+                    }
+    
+                    for (let file of files) {
+                        if (path.extname(file) === '.js') {
+                            process.send({ type: 'log', data: 'Carregando plugin: ' + file});
+                            try {
+                                const pluginPath = path.resolve(pluginDir, file);
+                                const pluginUrl = url.pathToFileURL(pluginPath);
+                                const plugin = await import(pluginUrl);
+                                bot.loadPlugin(plugin.default);
+                            } catch (err) {
+                                process.send({ type: 'error', data: 'Erro ao carregar o plugin: ' + file + ': ' + err});
+                            }
                         }
                     }
-                }
+                });
             });
         });
 
         bot.on('connect', async () => {
+            // Inicialize o estado para o bot atual
+            botTimers[username] = { isConnecting: true };
+
             process.send({ type: 'webcontents', event: 'bot-connecting', data: username });
             process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'connecting' } });
 
-            console.log("connecting")
-        })
+            process.send({ type: 'log', data: `connecting para ${username}` });
+
+            // Inicie o timer de 10 segundos para o bot atual
+            botTimers[username].timer = setTimeout(() => {
+                if (botTimers[username] && botTimers[username].isConnecting) {
+                    process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'disconnected' } });
+                    process.send({ type: 'log', data: `status desconectado após timeout para ${username}` });
+                    delete botTimers[username]; // Limpar o estado do bot após o timeout
+                }
+            }, 20000); // 20 segundos
+        });
 
         bot.on('login', () => {
-            if (!botsConectado.includes(username)) {
-                botsConectado.push(username);
-                botsaarray.push(bot);
-                process.send({ type: 'webcontents', event: 'botsarraytohtml', data: botsConectado });
-                process.send({ type: 'webcontents', event: 'bot-connected', data: bot.username });
-                process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: bot.username, status: 'connected' } });
-
-                const index = botsSemAutoReconnect.indexOf(username);
-                if (index > -1) {
-                    botsSemAutoReconnect.splice(index, 1);
+            if (botTimers[username] && botTimers[username].isConnecting) {
+                clearTimeout(botTimers[username].timer); // Limpar o timer se a conexão for bem-sucedida
+                botTimers[username].isConnecting = false;
+        
+                if (!botsConectado.includes(username)) {
+                    botsConectado.push(username);
+                    botsaarray.push(bot);
+                    process.send({ type: 'webcontents', event: 'botsarraytohtml', data: botsConectado });
+                    process.send({ type: 'webcontents', event: 'bot-connected', data: username });
+                    process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'connected' } });
+        
+                    const index = botsSemAutoReconnect.indexOf(username);
+                    if (index > -1) {
+                        botsSemAutoReconnect.splice(index, 1);
+                    }
+        
+                    process.send({ type: 'log', data: `logged para ${username}` });
                 }
-
-                console.log("logged")
             }
         });
 
@@ -1249,90 +1290,103 @@ process.on('message', async (process_msg_) => {
 
         const Chunk = require('prismarine-chunk')(bot.version);
 
-        bot._client.on('multi_block_change', (packet) => { // bypass fall check, so nao fiz em plugin pq da erro por algum motivo
-            const chunkPos = new Vec3(packet.chunkX, 0, packet.chunkZ);
-            let chunk = bot.world.getColumnAt(chunkPos);
-
-            if (!chunk) {
-                chunk = new Chunk();
-                bot.world.setColumn(chunkPos.x, chunkPos.z, chunk);
-
+        bot._client.on('multi_block_change', (packet) => {
+            if (fallcheckbypass) {
+                const chunkPos = new Vec3(packet.chunkX, 0, packet.chunkZ);
+                let chunk = bot.world.getColumnAt(chunkPos);
+        
+                if (!chunk) {
+                    chunk = new Chunk();
+                    bot.world.setColumn(chunkPos.x, chunkPos.z, chunk);
+                }
+        
                 packet.records.forEach((record) => {
                     const x = record.horizontalPos >> 4;
                     const z = record.horizontalPos & 0xF;
                     const y = record.y;
                     const blockPos = new Vec3(x, y, z);
-                    addBlockToChunk(chunk, record.blockId, blockPos);
+                    if (chunk) {
+                        addBlockToChunk(chunk, record.blockId, blockPos);
+                    } else {
+                        process.send({ type: 'error', data: 'Chunk is undefined when adding block.'});
+                    }
                 });
             }
         });
-
-        bot._client.on('block_change', (packet) => { // bypass fall check, so nao fiz em plugin pq da erro por algum motivo
-            const blockPos = new Vec3(packet.location.x, packet.location.y, packet.location.z);
-            bot.entity.position = blockPos;
-
-            const chunkPos = new Vec3(Math.floor(blockPos.x / 16), 0, Math.floor(blockPos.z / 16));
-            let chunk = bot.world.getColumnAt(chunkPos);
-
-            if (!chunk) {
-                chunk = new Chunk();
-                bot.world.setColumn(chunkPos.x, chunkPos.z, chunk);
-
+        
+        bot._client.on('block_change', (packet) => {
+            if (fallcheckbypass) {
+                const blockPos = new Vec3(packet.location.x, packet.location.y, packet.location.z);
+                bot.entity.position = blockPos;
+        
+                const chunkPos = new Vec3(Math.floor(blockPos.x / 16), 0, Math.floor(blockPos.z / 16));
+                let chunk = bot.world.getColumnAt(chunkPos);
+        
+                if (!chunk) {
+                    chunk = new Chunk();
+                    bot.world.setColumn(chunkPos.x, chunkPos.z, chunk);
+                }
+        
                 const relativePos = new Vec3(blockPos.x % 16, blockPos.y, blockPos.z % 16);
-                addBlockToChunk(chunk, packet.type, relativePos);
+                if (chunk) {
+                    addBlockToChunk(chunk, packet.type, relativePos);
+                } else {
+                    process.send({ type: 'error', data: 'Chunk is undefined when changing block.'});
+                }
             }
-        });
+        });        
 
         bot.on('end', async () => {
-            console.log("deleted")
+            process.send({ type: 'log', data: `deleted para ${username}` });
 
             const indexConectado = botsConectado.indexOf(username);
             if (indexConectado > -1) {
                 botsConectado.splice(indexConectado, 1);
             }
-
+        
             const indexArray = botsaarray.indexOf(bot);
             if (indexArray > -1) {
                 botsaarray.splice(indexArray, 1);
             }
-
+        
             process.send({ type: 'webcontents', event: 'botsarraytohtml', data: botsConectado });
             process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'disconnected' } });
             process.send({ type: 'webcontents', event: 'bot-disconnected', data: username });
-
+        
             process.send({ type: 'bot-end', username: username });
-
-            if (miningState[bot.username]) {
-                miningState[bot.username] = false;
+        
+            if (miningState[username]) {
+                miningState[username] = false;
             }
-
-            if (PescaActive[bot.username]) {
-                PescaActive[bot.username] = false;
+        
+            if (killAuraActive[username]) {
+                killAuraActive[username] = false;
             }
-
-            if (killAuraActive[bot.username]) {
-                killAuraActive[bot.username] = false;
+        
+            if (IsSneaking[username]) {
+                IsSneaking[username] = false;
             }
-
-            if (IsSneaking[bot.username]) {
-                IsSneaking[bot.username] = false;
+        
+            if (followInterval[username]) {
+                clearInterval(followInterval[username]);
+                isFollowing[username] = false;
             }
-
-            if (followInterval[bot.username]) {
-                clearInterval(followInterval[bot.username]);
-                isFollowing[bot.username] = false;
-            }
-
+        
             if (autoreconnect) {
-                console.log("auto reconect ativado - esperando 50ms")
-                await sleep(50); // esperar ficar tudo ok para o autoreconnect ? por que esta verificao ? para caso delay do autoreconnect seja 0 ou muito baixo
+                process.send({ type: 'log', data: 'auto reconect ativado - esperando 50ms' });
+                await sleep(50); // esperar ficar tudo ok para o autoreconnect
                 await sleep(autoreconnectdelay); // esperar delay do autoreconnect
-                console.log("auto reconect ativado - esperando " + autoreconnectdelay + "ms")
-                if (!botsConectado.includes(username) && !botsSemAutoReconnect.includes(username)) // por que esta verificacao? para caso o usuario clique em conectar mesmo com o auto reconnect ativo
-                {
-                    console.log("tentando reconect")
+                process.send({ type: 'log', data: `auto reconect ativado - esperando ${autoreconnectdelay}ms` });
+                if (!botsConectado.includes(username) && !botsSemAutoReconnect.includes(username)) {
+                    process.send({ type: 'log', data: 'tentando reconect' });
                     process.send({ type: 'ipcMain', event: 'connect-bot', data: { host: host, username: username, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType } });
                 }
+            }
+        
+            // Limpar o estado e o timer do bot
+            if (botTimers[username]) {
+                clearTimeout(botTimers[username].timer);
+                delete botTimers[username];
             }
         })
 
@@ -1364,102 +1418,89 @@ process.on('message', async (process_msg_) => {
         });
 
         bot.on('error', (err) => {
-            console.log(err)
+            process.send({ type: 'log', data: 'bot_on_error: ' + err});
         })
 
         bot.on('kicked', (reason) => {
             let reasonObj;
-            if (typeof reason === 'string') {
+        
+            // Decodificação da razão do kick
+            try {
                 reasonObj = JSON.parse(reason);
-            } else {
+            } catch (e) {
                 reasonObj = reason;
             }
-
+        
+            // Registro do objeto razão para debug
+            process.send({ type: 'log', data: 'bot_on_kicked_reason_obj: ' + JSON.stringify(reasonObj)});
+        
             let htmlMessage = '';
-
             htmlMessage += `<br/><p>Kick:</p>`;
-
-            if (reasonObj.extra) {
-                let textArray = reasonObj.extra.map(item => item.text ? { text: item.text, color: item.color ? item.color : 'white' } : null);
-                let messages = textArray.filter(item => item && item.text.trim() !== '');
-                let hasNewLine = messages.some(message => message.text.includes('\n'));
-
-                messages.forEach((message, index) => {
-                    let splitText = message.text.split('\n');
-                    splitText.forEach((text, i) => {
-                        if (text !== '') {
-                            let addBreakLine = i < splitText.length - 1 || message.text.endsWith('\n') || !hasNewLine;
-
-                            if (index === 0 && i === 0) {
-                                htmlMessage += `<h1 style="color: ${message.color};">${text}${addBreakLine ? '<br/>' : ''}</h1>`;
-                            } else {
-                                htmlMessage += `<span style="color: ${message.color};">${text}${addBreakLine ? '<br/>' : ''}</span>`;
+        
+            function extractText(obj) {
+                let result = [];
+                if (obj.type === 'compound' && obj.value) {
+                    if (obj.value.extra && obj.value.extra.type === 'list' && Array.isArray(obj.value.extra.value.value)) {
+                        obj.value.extra.value.value.forEach(item => {
+                            if (typeof item === 'string') {
+                                result.push({ text: item, color: 'white' });
                             }
-                        }
-                    });
-                });
-            } else if (reasonObj.value && reasonObj.value.extra && reasonObj.value.extra.value && reasonObj.value.extra.value.value) {
-                let textArray = reasonObj.value.extra.value.value.map(item => item.text ? { text: item.text.value, color: item.color ? item.color.value : 'black' } : null);
-                let messages = textArray.filter(item => item && item.text.trim() !== '');
-                messages.forEach((message, index) => {
-                    let splitText = message.text.split('\n').filter(text => text.trim() !== '');
-                    splitText.forEach((text, i) => {
-                        if (index === 0 && i === 0) {
-                            htmlMessage += `<h1 style="color: ${message.color};">${text}</h1>`;
-                        } else {
-                            htmlMessage += `<p style="color: ${message.color};">${text}</p>`;
-                        }
-                    });
-                });
+                        });
+                    }
+                    if (obj.value.text && obj.value.text.type === 'string') {
+                        result.push({ text: obj.value.text.value, color: 'white' });
+                    }
+                }
+                return result;
             }
-            else if (reasonObj.text && reasonObj.color) {
-                let message = processMinecraftCodes(reasonObj.text);
-                htmlMessage += `<br/><p style="color: ${reasonObj.color};">${message}</p>`;
-            }
-            else if (reasonObj.text) {
-                let message = processMinecraftCodes(reasonObj.text);
+        
+            let messages = extractText(reasonObj).filter(item => item.text.trim() !== '');
+        
+            messages.forEach((message, index) => {
+                let splitText = message.text.split('\n');
+                splitText.forEach((text, i) => {
+                    if (text !== '') {
+                        let addBreakLine = i < splitText.length - 1 || message.text.endsWith('\n');
+                        htmlMessage += `<span style="color: ${message.color};">${text}${addBreakLine ? '<br/>' : ''}</span>`;
+                    }
+                });
+            });
+        
+            // Fallback para mensagens simples ou não identificadas
+            if (messages.length === 0) {
+                let message = processMinecraftCodes(typeof reasonObj === 'string' ? reasonObj : JSON.stringify(reasonObj));
                 htmlMessage += `<br/><p>${message}</p>`;
             }
-            else {
-                let message = processMinecraftCodes(reasonObj);
-                htmlMessage += `<br/><p>${message}</p>`;
-            }
-
+        
             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: username, message: htmlMessage } });
-
-            console.log(htmlMessage);
-
-
+        
+            process.send({ type: 'log', data: 'bot_on_kicked_html_message: ' + htmlMessage});
+        
+        
             const indexConectado = botsConectado.indexOf(username);
             if (indexConectado > -1) {
                 botsConectado.splice(indexConectado, 1);
             }
-
+        
             const indexArray = botsaarray.indexOf(bot);
             if (indexArray > -1) {
                 botsaarray.splice(indexArray, 1);
             }
-
+        
             process.send({ type: 'webcontents', event: 'botsarraytohtml', data: botsConectado });
             process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'disconnected' } });
             process.send({ type: 'webcontents', event: 'bot-disconnected', data: username });
 
-        });
-
-        /* // debug things
-          bot._client.on('packet', (data, meta) => {
-            console.log('Recebido:', meta.name, data);
-          });
-        
-          bot._client.on('outgoing:' + 'packet', (data) => {
-            console.log('Enviado:', 'packet', data);
-          }); 
-        */
+            if (botTimers[username]) {
+                clearTimeout(botTimers[username].timer);
+                delete botTimers[username];
+            }
+        });        
 
         bot.on('message', (message) => {
             let fullMessage = processMessage(message);
             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: fullMessage } });
-
+            
             if (ClickTextDetect) {
                 processClickEvent(bot, message);
             }
@@ -1470,7 +1511,7 @@ process.on('message', async (process_msg_) => {
                 let fullTitle = processTitle(title);
                 process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: fullTitle } });
             } catch (error) {
-                console.error("Error: " + error);
+                process.send({ type: 'error', data: 'Error: ' + error });
             }
         });
 
@@ -1480,7 +1521,7 @@ process.on('message', async (process_msg_) => {
                     bot?.emit('title', data.text);
                 }
             } catch (error) {
-                console.error("Error: " + error);
+                process.send({ type: 'error', data: 'Error: ' + error });
             }
         })
 
@@ -1621,30 +1662,38 @@ process.on('message', async (process_msg_) => {
                         })();
                     }
                     else if (message.toLowerCase().startsWith("$miner2 ")) {
-                        (async () => {
-                            const args = message.split(' ')
-                            const [startX, startY, startZ, endX, endY, endZ] = args.slice(1).map(Number);
-                            miningState[bot.username] = !miningState[bot.username];
-                            if (miningState[bot.username]) {
-                                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` } })
-                            } else {
-                                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Miner Desativado!</span><br/>` } })
-                            }
-                            await minerar2(bot, startX, startY, startZ, endX, endY, endZ);
-                        })();
-                    }
-                    else if (message.toLowerCase() == "$pesca") {
-                        PescaActive[bot.username] = !PescaActive[bot.username];
-
-                        if (PescaActive[bot.username]) {
-                            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>Pesca ativado</span><br/>" } });
-                            pesca(bot);
+                        const args = message.split(' ');
+                        const command = args[1].toLowerCase();
+                
+                        switch (command) {
+                            case 'parkour':
+                                globalParkourMode = !globalParkourMode;
+                                const parkourStatus = globalParkourMode ? 'ativado' : 'desativado';
+                                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:orange'>Modo Parkour ${parkourStatus}!</span><br/>` } });
+                                break;
+                
+                            case 'placeblock':
+                                globalBlockPlacingAllowed = !globalBlockPlacingAllowed;
+                                const blockPlacingStatus = globalBlockPlacingAllowed ? 'permitida' : 'proibida';
+                                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:orange'>Colocação de blocos ${blockPlacingStatus}!</span><br/>` } });
+                                break;
+                
+                            default:
+                                if (args.length === 7) {
+                                    const [startX, startY, startZ, endX, endY, endZ] = args.slice(1).map(Number);
+                                    if (!miningState[bot.username]) {
+                                        iniciarMineracao(bot, startX, startY, startZ, endX, endY, endZ);
+                                        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Miner ativado!</span><br/>` } });
+                                    } else {
+                                        pararMineracao(bot);
+                                        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Miner Desativado!</span><br/>` } });
+                                    }
+                                } else {
+                                    process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Comando inválido. Use $miner [parkour|placeblock] ou $miner x1 y1 z1 x2 y2 z2</span><br/>` } });
+                                }
                         }
-                        else {
-                            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:red'>Pesca desativado</span><br/>" } });
-                        }
                     }
-                    else if (message.toLowerCase().startsWith("$killAura.timems=")) {
+                    else if (message.toLowerCase().startsWith("$killaura.timems=")) {
                         killAuraDelay = parseInt(message.split('=')[1]);
 
                         if (killAuraDelay <= 0) {
@@ -1653,7 +1702,7 @@ process.on('message', async (process_msg_) => {
 
                         process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Delay do KillAura definido para ${killAuraDelay}ms</span><br/>` } })
                     }
-                    else if (message.toLowerCase().startsWith("$killAura.distance=")) {
+                    else if (message.toLowerCase().startsWith("$killaura.distance=")) {
                         DistanceReach = parseInt(message.split('=')[1]);
 
                         if (DistanceReach <= 0 || DistanceReach > 6 || isNaN(DistanceReach)) {
@@ -1661,27 +1710,26 @@ process.on('message', async (process_msg_) => {
                             DistanceReach = 3
                         }
                         else {
-                            console.log(DistanceReach)
+                            process.send({ type: 'log', data: DistanceReach});
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Distancia do KillAura definida para ${DistanceReach}m</span><br/>` } })
                         }
                     }
                     else if (message.toLowerCase() == "$killaura") {
                         killAuraActive[bot.username] = !killAuraActive[bot.username]
-
+                    
                         if (killAuraActive[bot.username]) {
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>KillAura ativado</span><br/>" } })
                             attackInterval[bot.username] = setInterval(() => {
-                                const playerFilter = (entity) => entity.type === 'player' && !botsConectado.includes(entity.username);
-                                const playerEntity = bot.nearestEntity(playerFilter);
-
-                                if (playerEntity) {
-                                    const distance = bot.entity.position.distanceTo(playerEntity.position);
+                                const nearestEntity = findNearestEntity(bot, true);
+                                if (nearestEntity) {
+                                    const distance = distanceTo(bot.entity.position, nearestEntity.position);
 
                                     if (distance < DistanceReach) {
-                                        bot.lookAt(playerEntity.position.offset(0, playerEntity.height, 0));
-                                        bot.attack(playerEntity, true);
+                                        bot.lookAt(nearestEntity.position.offset(0, nearestEntity.height, 0));
+                                        bot.attack(nearestEntity, true);
                                     }
                                 }
+
                             }, killAuraDelay);
                         } else {
                             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:red'>KillAura desativado</span><br/>" } })
@@ -1777,12 +1825,15 @@ process.on('message', async (process_msg_) => {
                         if (!isFollowing[bot.username]) {
                             const mcData = require('minecraft-data')(bot.version);
                             const defaultMove = new Movements(bot, mcData);
+
+                            defaultMove.allowParkour = true;   // Permite o bot a pular automaticamente quando necessário (parkour)
+                            defaultMove.canJump = true;        // Permite o bot a pular
+
                             bot.pathfinder.setMovements(defaultMove);
 
                             playerToFollow[bot.username] = bot.players[playerName];
 
                             if (!playerToFollow[bot.username]) {
-                                console.log(`O jogador ${playerName} não foi encontrado!`);
                                 process.send({
                                     type: 'webcontents', event: 'bot-message', data: {
                                         bot: bot.username,
@@ -1808,7 +1859,7 @@ process.on('message', async (process_msg_) => {
                                             }
                                         });
                                     }
-                                }, 100);
+                                }, 500);
 
                                 isFollowing[bot.username] = true;
                                 process.send({
@@ -1843,6 +1894,9 @@ process.on('message', async (process_msg_) => {
         autoreconnect = process_msg_.data.autoReconnect;
         autoreconnectdelay = parseInt(process_msg_.data.delay);
     }
+    if (process_msg_.event === 'form-data-changed-fallcheck') {
+        fallcheckbypass = process_msg_.data.fallCheck;
+    }
     if (process_msg_.event === 'remove-bot') {
         const botUsername = process_msg_.data;
         botsSemAutoReconnect.push(botUsername);
@@ -1861,7 +1915,7 @@ process.on('message', async (process_msg_) => {
         const { host, botUsername, version, proxy, proxyType } = process_msg_.data;
         const botExists = botsaarray.some(bot => bot.username === botUsername);
 
-        console.log(process_msg_.data)
+        process.send({ type: 'log', data: process_msg_.data});
 
         if (!botExists) {
             process.send({ type: 'ipcMain', event: 'connect-bot', data: { host: host, username: botUsername, version: version, proxy: proxy && proxy.ip && proxy.port ? proxy : null, proxyType: proxyType } });

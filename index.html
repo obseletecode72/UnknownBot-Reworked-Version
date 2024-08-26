@@ -9,7 +9,7 @@
 
 <body>
   <div class="left">
-    <h1>UnknownBot Reworked Version v3.2</h1>
+    <h1>UnknownBot Reworked Version v3.3</h1>
     <form id="connect-form">
       <label for="host">Host:</label>
       <br>
@@ -92,8 +92,12 @@
       <br>
       <br>
       <div class="aligned-item">
-        <input type="checkbox" id="autoReconnect" name="autoReconnect" class="round-checkbox" onchange="sendData()">
+        <input type="checkbox" id="autoReconnect" name="autoReconnect" class="round-checkbox" onchange="sendDataReconnect()">
         <label for="autoReconnect">Auto Reconnect</label>
+      </div>
+      <div class="aligned-item">
+        <input type="checkbox" id="fallCheck" name="fallCheck" class="round-checkbox" onchange="sendFallCheck()">
+        <label for="fallCheck">Fall Check Bypass</label>
       </div>
       <div class="aligned-item" id="delayDiv" style="display: none;">
         <label for="delay" class="delay-label">Delay(MS):</label>
@@ -168,14 +172,22 @@
       botsConectadosHTML = botsaarray;
     })
 
-    function sendData() {
+    function sendDataReconnect() {
       const autoReconnect = document.getElementById('autoReconnect').checked;
       let delay = document.getElementById('delay').value || 0;
       const data = {
         autoReconnect,
         delay
       };
-      ipcRenderer.send('form-data-changed', data);
+      ipcRenderer.send('form-data-changed-reconnect', data); // Alterar nome do evento
+    }
+
+    function sendFallCheck() {
+      const fallCheckBox = document.getElementById('fallCheck').checked;
+      const data = {
+        fallCheck: fallCheckBox // Alinhar nome da propriedade ao código Java
+      };
+      ipcRenderer.send('form-data-changed-fallcheck', data); // Alterar nome do evento
     }
 
     function validateInput(input) {
@@ -184,6 +196,7 @@
       }
       input.value = input.value.replace(/[^0-9]/g, '');
     }
+
     document.getElementById('autoReconnect').addEventListener('change', function () {
       document.getElementById('delayDiv').style.display = this.checked ? 'flex' : 'none';
     });

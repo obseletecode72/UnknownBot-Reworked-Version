@@ -1,28 +1,15 @@
 {
-  "name": "UnknownBot",
-  "version": "3.1.0",
-  "author": "win32k_sys",
   "dependencies": {
     "atob": "^2.1.2",
-    "dns": "^0.2.2",
-    "electron": "^29.1.4",
-    "electron-packager": "^17.1.2",
+    "electron": "^32.0.1",
     "electron-reload": "^2.0.0-alpha.1",
-    "fs": "^0.0.1-security",
-    "http": "^0.0.1-security",
     "jimp": "^0.22.12",
-    "minecraft-protocol": "^1.47.0",
-    "mineflayer": "^4.20.0",
+    "mineflayer": "^4.20.1",
     "mineflayer-pathfinder": "^2.4.5",
-    "mineflayer-web-inventory": "^1.8.4",
-    "path": "^0.12.7",
+    "mineflayer-tool": "^1.2.0",
+    "mineflayer-web-inventory": "^1.8.5",
     "pngjs-image": "^0.11.7",
-    "prismarine-chunk": "^1.35.0",
     "proxy-agent": "^5.0.0",
-    "socks": "^2.8.1",
-    "unidecode": "^1.0.1",
-    "url": "^0.11.3",
-    "util": "^0.12.5",
-    "vec3": "^0.1.10"
+    "unidecode": "^1.1.0"
   }
 }

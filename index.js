@@ -7,6 +7,42 @@ const unidecode = require('unidecode');
 const childProcess = require('child_process');
 let child = childProcess.fork(path.join(__dirname, 'create_bot.js'));
 
+function createLogWindow() {
+  logWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: true,
+    resizable: true,
+    autoHideMenuBar: true,
+    icon: __dirname + '/assetsUBBOT/icone.png',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  })
+
+  logWindow.loadFile('logs.html')
+  logWindow.setMenu(null) // Oculta o menu padrão
+}
+
+function redirectConsoleToLogWindow() {
+  const originalConsoleLog = console.log;
+  console.log = (...args) => {
+    originalConsoleLog(...args);
+    if (logWindow) {
+      logWindow.webContents.send('log', args.join(' '));
+    }
+  };
+
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    originalConsoleError(...args);
+    if (logWindow) {
+      logWindow.webContents.send('log', `[ERROR] ${args.join(' ')}`);
+    }
+  };
+}
+
 let janelasCaptcha = {};
 
 let ClickTextDetectFromVar = false;
@@ -46,19 +82,6 @@ if (fs.existsSync(filePath)) {
   });
 }
 
-function createWindow(data) {
-  const win = new BrowserWindow(data.options);
-  win.loadFile(data.file);
-  win.setMenu(null);
-
-  win.on('close', data.onClose);
-  win.webContents.on('did-finish-load', () => {
-    win.webContents.send(data.event, data.message);
-  });
-
-  return win;
-}
-
 global.mainWindow;
 
 function createWindow() {
@@ -83,8 +106,17 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow()
 
+  createLogWindow();
+  redirectConsoleToLogWindow();
+
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0)
+      {
+        createLogWindow();
+        redirectConsoleToLogWindow();
+        createWindow();
+      }
+
   })
 })
 
@@ -92,11 +124,15 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
 })
 
-ipcMain.on('form-data-changed', (event, data) => {
+ipcMain.on('form-data-changed-fallcheck', (event, data) => {
+  child.send({ event: 'form-data-changed-fallcheck', data });
+});
+
+ipcMain.on('form-data-changed-reconnect', (event, data) => {
   child.send({ event: 'form-data-changed-reconnect', data });
 });
 
-ipcMain.on('log', (event, message) => {
+ipcMain.on('log', (event, message) => { // isso e outra coisa, nao tem nada haver com o logs que estamos falando
   console.log(message);
 });
 
@@ -112,10 +148,10 @@ child.on('message', (message) => {
   if (message.type === 'webcontents') {
     global.mainWindow.webContents.send(message.event, message.data);
   }
-  if (message.type === 'ipcMain') {
+  else if (message.type === 'ipcMain') {
     ipcMain.emit(message.event, null, message.data);
   }
-  if (message.type === 'electron' && message.action === 'createCaptchaWindow') {
+  else if (message.type === 'electron' && message.action === 'createCaptchaWindow') {
     const { botusername, captchaImage } = message.data;
 
     // Se a janela já existir para este bot, feche-a antes de criar uma nova
@@ -150,7 +186,7 @@ child.on('message', (message) => {
       janelasCaptcha[botusername].webContents.send('bot-janela-1', botusername, captchaImage);
     })
   }
-  if (message.type === 'electron' && message.action === 'createWebInventoryWindow') {
+  else  if (message.type === 'electron' && message.action === 'createWebInventoryWindow') {
     const botusername = message.data.bot;
     inventoryWindow = new BrowserWindow({
       width: 800,
@@ -168,7 +204,7 @@ child.on('message', (message) => {
       global.mainWindow.webContents.send('bot-message', { bot: botusername, message: "<br/><span style='color:red'>Interface fechada!</span><br><br/>" });
     });
   }
-  if (message.type === 'bot-end') {
+  else if (message.type === 'bot-end') {
     const username = message.username;
 
     if (janelasCaptcha[username]) {
@@ -182,7 +218,7 @@ child.on('message', (message) => {
       inventoryWindow = null;
     }
   }
-  if (message.type === 'closewindowcaptcha') {
+  else if (message.type === 'closewindowcaptcha') {
     const username = message.username;
 
     if (janelasCaptcha[username]) {
@@ -190,12 +226,18 @@ child.on('message', (message) => {
       janelasCaptcha[username] = null;
     }
   }
-  if (message.type === 'closewindowinventory') {
+  else if (message.type === 'closewindowinventory') {
     if (isInvWindowOpened()) {
       inventoryWindow.loadURL('about:blank');
       inventoryWindow.close();
       inventoryWindow = null;
     }
+  }
+  else if (message.type === 'log') {
+    console.log(`[BOT_INT] ${message.data}`);
+  } 
+  else if (message.type === 'error') {
+    console.error(`[BOT_INT_ERR] ${message.data}`);
   }
 });
 
@@ -213,4 +255,8 @@ ipcMain.on('remove-bot', async (event, botUsername) => {
 
 ipcMain.on('reco-bot', async (event, data) => {
   child.send({ event: 'reco-bot', data });
+});
+
+ipcMain.on('close', (code) => {
+  console.log(`Child process exited with code ${code}`);
 });
