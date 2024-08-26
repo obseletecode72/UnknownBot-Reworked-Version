@@ -14,10 +14,10 @@ if "%choice%"=="1" (
     npx electron index.js
 ) else if "%choice%"=="2" (
     echo Instalando dependencias...
-    npm install
+    call npm install
 	echo Instalacao principal finalizada...
 	echo Iniciando 2 parte
-	powershell -Command "Expand-Archive -Path 'node_modules.zip' -DestinationPath 'node_modules' -Force"
+	call powershell -Command "Expand-Archive -Path 'node_modules.zip' -DestinationPath 'node_modules' -Force"
 ) else (
     echo Opcao invalida. Saindo...
 )

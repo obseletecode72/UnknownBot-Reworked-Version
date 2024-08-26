@@ -5,7 +5,7 @@ const packagerOptions = {
     name: 'UnknownBot',
     platform: 'win32',
     arch: 'x64',
-    appVersion: '3.1.0',
+    appVersion: '3.3.0',
     electronVersion: '29.1.4',
     author: 'win32k_sys',
     icon: 'icone.ico',

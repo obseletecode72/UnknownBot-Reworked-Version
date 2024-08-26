@@ -1,4 +1,9 @@
 {
+  "name": "UnknownBot",
+  "version": "3.3.0",
+  "description": "Meu projeto Electron",
+  "main": "index.js",
+  "author": "win32k_sys",
   "dependencies": {
     "atob": "^2.1.2",
     "electron": "^32.0.1",
