@@ -2,6 +2,7 @@
   "dependencies": {
     "atob": "^2.1.2",
     "electron": "^32.0.1",
+    "electron-packager": "^17.1.2",
     "electron-reload": "^2.0.0-alpha.1",
     "jimp": "^0.22.12",
     "mineflayer": "^4.20.1",
