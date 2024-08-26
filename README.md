@@ -22,14 +22,9 @@ Se quiser colaborar com o projeto e fazer suas modificações, e quiser que eu i
 
 1- Instale o Node JS mais recente por aqui: https://nodejs.org/en
 
-2- Abra um cmd na mesma pasta em que voce extraiu os arquivos e use ´npm install´, isso ira instalar todas dependencias do projeto baseado no ´package.json´
+2- Abra como administrador o arquivo "instalar_ou_iniciar.bat" e selecione a opcao Instalar, e depois de finalizado, abra denovo e selecione a opçao Iniciar
 
-3- Use ´electron index.js´ ou ´npx electron index.js´ se nao der certo o primeiro comando, e pronto voce podera usar o bot
-
-OBS: Para abrir um cmd na mesma pasta clique ao lado do nome da pasta no "Vazio" e apague todas as letras e digite 'cmd' apos isso pressione enter (aonde esta em azul e aonde voce deve clicar)
-
-![image](https://github.com/obseletecode72/UnknownBot-Reworked-Version/assets/138137862/725f3a9a-4364-4138-8024-51e9a20aaed5)
-
+## Modulos que estao no RAR (Nao Mexa)
 ## Para que serve o arquivo digging.js?
 
 Bem a API do Mineflayer nao e perfeita entao contem bugs entao este arquivo e uma versao melhorada para o uso de quebrar blocos pois contem bugs igual eu disse, para instalar isso voce pode substituir o arquivo em ´node_modules\mineflayer\lib\plugins´
@@ -41,6 +36,10 @@ Alguns antibots fazem algumas verificaçoes adicionais, e este arquivo adiciona 
 ## Para que serve o arquivo entities.js?
 
 Dar compatibilidade para o arquivo physics.js, se quiser usar o physics use o entities tambem (OBRIGATORIO)
+
+## Para que serve o arquivo CollectBlock.js?
+
+Arrumar um problema em que nao minerava alguns blocos por conta de estar em uma funçao antiga
 
 ## Plugins
 
@@ -57,11 +56,7 @@ Para mais informações, junte-se a nós no Discord: https://discord.gg/rTEtGZgq
 
 Para compilar o UnknownBot em .exe voce pode seguir estes passos abaixo, ou baixar ele pronto em Releases
 
-1- De o commando 'npm install', para instalar todas dependencias do projeto
-
-2- 'node converter-para-exe.js', isso ira compilar em .exe em uma pasta
+1- Abra o arquivo "converter_para_exe.bat" isso ira compilar em .exe em uma pasta
 
 OBS: Quando o programa e compilado em .exe, ele sai do "Modo" Desenvolvimento para o "Modo" Release, deste jeito, as pastas plugins/assets/config etc... elas so estao disponiveis em, '/resources/app/' la voce podera encontrar as pastas e arquivos, portanto e la que voce vai querer modificar se voce quiser tirar algum plugin ou colocar/modificar etc...
-
-OBS2: La voce encontrara tambem a pasta node_modules, voce podera colar o digging.js se quiser la, e o mesmo procedimento, apenas mudou as pastas
 
