@@ -137,8 +137,10 @@ function startSpammer(bot) {
 
     if (spammer.randomTell) {
         const players = Object.keys(bot.players);
-        if (players.length > 0) {
-            const randomPlayer = players[Math.floor(Math.random() * players.length)];
+        const filteredPlayers = players.filter(player => !botsConectado.includes(player));
+
+        if (filteredPlayers.length > 0) {
+            const randomPlayer = filteredPlayers[Math.floor(Math.random() * filteredPlayers.length)];
             bot.chat(`/tell ${randomPlayer} ${message}`);
         }
     } else {
@@ -147,6 +149,7 @@ function startSpammer(bot) {
 
     setTimeout(() => startSpammer(bot), spammer.delay);
 }
+
 
 function handleSpammerCommand(bot, args) {
     initBotSpammer(bot.username);
