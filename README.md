@@ -60,5 +60,9 @@ Para compilar o UnknownBot em .exe voce pode seguir estes passos abaixo, ou baix
 
 OBS: caso voce compile ira ter que extrair as pastas do rar node_modules para a pasta node_modules que se encontra dentro das pastas resources e etc... caso contrario ira dar erro
 
-OBS: Quando o programa e compilado em .exe, ele sai do "Modo" Desenvolvimento para o "Modo" Release, deste jeito, as pastas plugins/assets/config etc... elas so estao disponiveis em, '/resources/app/' la voce podera encontrar as pastas e arquivos, portanto e la que voce vai querer modificar se voce quiser tirar algum plugin ou colocar/modificar etc...
+OBS2: Quando o programa e compilado em .exe, ele sai do "Modo" Desenvolvimento para o "Modo" Release, deste jeito, as pastas plugins/assets/config etc... elas so estao disponiveis em, '/resources/app/' la voce podera encontrar as pastas e arquivos, portanto e la que voce vai querer modificar se voce quiser tirar algum plugin ou colocar/modificar etc...
+
+## Geral
+
+Se voce quiser personalizar seu background apenas coloque uma foto ".jpg" nomeada de custom_background em "assetsUBBOT/" e habilite o Custom Background no menu, e entao sera trocado o background para a foto
 
