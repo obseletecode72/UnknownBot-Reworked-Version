@@ -22,7 +22,7 @@ function createLogWindow() {
   })
 
   logWindow.loadFile('logs.html')
-  logWindow.setMenu(null) // Oculta o menu padrão
+  logWindow.setMenu(null)
 }
 
 function redirectConsoleToLogWindow() {
@@ -59,20 +59,16 @@ if (fs.existsSync(filePath)) {
       return;
     }
 
-    // Verifica se a string 'text="' existe no arquivo
     if (data.includes('text="')) {
-      // Extrai a mensagem após text=
       textFromFileFromVar = data.split('text="')[1].split('"')[0];
 
       if (textFromFileFromVar != "") {
-        // Remove acentos do texto
         let textWithoutAccents = unidecode(textFromFileFromVar);
 
         console.log("Texto Extraido: " + textWithoutAccents);
         console.log("Caso tenha acentos o codigo ira remover os acentos para nao causar erros!")
         ClickTextDetectFromVar = true;
 
-        // Envia as variáveis para o processo filho
         child.send({ event: 'ClickText', data: { ClickTextDetectFromVar, textFromFileFromVar: textWithoutAccents } });
       }
       else {
@@ -100,7 +96,7 @@ function createWindow() {
   })
 
   global.mainWindow.loadFile('index.html')
-  global.mainWindow.setMenu(null) // Oculta o menu padrão
+  global.mainWindow.setMenu(null)
 }
 
 app.whenReady().then(() => {
@@ -132,7 +128,7 @@ ipcMain.on('form-data-changed-reconnect', (event, data) => {
   child.send({ event: 'form-data-changed-reconnect', data });
 });
 
-ipcMain.on('log', (event, message) => { // isso e outra coisa, nao tem nada haver com o logs que estamos falando
+ipcMain.on('log', (event, message) => {
   console.log(message);
 });
 

@@ -6,6 +6,7 @@ const collectBlock = require('mineflayer-collectblock').plugin
 const toolPlugin = require('mineflayer-tool').plugin
 var Vec3 = require('vec3');
 
+const crypto = require('crypto');
 const dns = require('dns');
 const util = require('util');
 const Http = require('http')
@@ -31,18 +32,16 @@ process.on('unhandledRejection', (reason, promise) => {
     }
 });
 
-// Handler global para exceções não tratadas
 process.on('uncaughtException', (err) => {
     process.send({ type: 'error', data: 'Exceção não tratada capturada: ' + err.message });
     process.send({ type: 'error', data: 'Stack: ' + err.stack });
-    // Continuar a execução do programa (não faz nada aqui)
 });
 
 let bots = {};
 var botsConectado = [];
 let botsaarray = []
 let botsSemAutoReconnect = [];
-const botTimers = {}; // Objeto para armazenar timers e estados de conexão dos bots
+const botTimers = {};
 
 // killaura part
 var killAuraActive = {}
@@ -66,7 +65,6 @@ var followInterval = {};
 // follow part
 
 // miner part
-let swingInterval = {};
 var miningState = {};
 // miner part
 
@@ -76,14 +74,13 @@ let record = {};
 let autoreconnect = false;
 let fallcheckbypass = false;
 let autoreconnectdelay = 0;
-let mcData;
 
 let captchaImages = {};
 
 const resolveSrv = util.promisify(dns.resolveSrv);
 const lookup = util.promisify(dns.lookup);
 
-global.listadecommandos = ["$killaura", "$goto ", "$shift", "$move ", "$holditem", "$killaura.timems=", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$killaura.distance=", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
+global.listadecommandos = ["$killaura", "$spammer", "$goto ", "$shift", "$move ", "$holditem", "$sethotbarslot ", "$listslots", "$setinventoryslot ", "$dropall", "$inventoryinterface", "$follow ", "$miner ", "$miner2 ", "$clickentity"]
 global.Syntax = `
 <span style="color:yellow">Lista de comandos existentes:</span><br/>
 <span style="color:white">- KillAura, Ataca todas entidades ao redor:</span> <span style="color:orange">$killaura</span><br/>
@@ -99,9 +96,105 @@ global.Syntax = `
 <span style="color:white">- InventoryInterface, Mostra seu inventario em outra janela:</span> <span style="color:orange">$inventoryinterface</span><br/>
 <span style="color:white">- HoldItem, Clica o botao esquerdo e solta com o item que esta na mao:</span> <span style="color:orange">$holditem</span><br/>
 <span style="color:white">- ClickEntity, Clica o botao direito e solta com na entidade mais proxima:</span> <span style="color:orange">$clickentity</span><br/>
+<span style="color:white">- Spammer, Spamma mensagens:</span> <span style="color:orange">$spammer</span><br/>
 <span style="color:white">- Move, Faz o bot se mover por um tempo determinado. (As direções podem ser combinadas com o caractere "|":</span> <span style="color:orange">$move [direções jump,forward,back,left,right,sneak,sprint] [duração em ticks]
 </span><br/>
 `
+
+// Objeto para armazenar as configurações de spammer para cada bot
+const botSpammers = {};
+
+function initBotSpammer(botUsername) {
+    if (!botSpammers[botUsername]) {
+        botSpammers[botUsername] = {
+            active: false,
+            message: '',
+            randomTell: false,
+            delay: 1000,
+            antispam: {
+                active: false,
+                length: 0
+            }
+        };
+    }
+}
+
+function generateRandomString(length) {
+    return crypto.randomBytes(Math.ceil(length/2))
+        .toString('hex')
+        .slice(0, length);
+}
+
+function startSpammer(bot) {
+    const spammer = botSpammers[bot.username];
+    if (!spammer || !spammer.active) return;
+
+    let message = spammer.message;
+    if (spammer.antispam.active) {
+        const antispamString = generateRandomString(spammer.antispam.length);
+        message += ` [${antispamString}]`;
+    }
+
+    if (spammer.randomTell) {
+        const players = Object.keys(bot.players);
+        if (players.length > 0) {
+            const randomPlayer = players[Math.floor(Math.random() * players.length)];
+            bot.chat(`/tell ${randomPlayer} ${message}`);
+        }
+    } else {
+        bot.chat(message);
+    }
+
+    setTimeout(() => startSpammer(bot), spammer.delay);
+}
+
+function handleSpammerCommand(bot, args) {
+    initBotSpammer(bot.username);
+    const spammer = botSpammers[bot.username];
+
+    switch(args[1]) {
+        case undefined:
+            spammer.active = !spammer.active;
+            if (spammer.active) {
+                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Spammer ativado!</span><br/>` } });
+                startSpammer(bot);
+            } else {
+                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Spammer Desativado!</span><br/>` } });
+            }
+            break;
+        
+        case 'message':
+            spammer.message = args.slice(2).join(' ').replace(/^"(.*)"$/, '$1');
+            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:orange'>Mensagem do spammer definida: ${spammer.message}</span><br/>` } });
+            break;
+        
+        case 'random_tell':
+            spammer.randomTell = !spammer.randomTell;
+            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:orange'>Modo random tell ${spammer.randomTell ? 'ativado' : 'desativado'}!</span><br/>` } });
+            break;
+        
+        case 'delay':
+            if (args[2] && !isNaN(args[2])) {
+                spammer.delay = parseInt(args[2]);
+                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:orange'>Delay do spammer definido para ${spammer.delay}ms</span><br/>` } });
+            }
+            break;
+        
+        case 'antispam':
+            if (args[2] && !isNaN(args[2])) {
+                const length = parseInt(args[2]);
+                spammer.antispam.active = length > 0;
+                spammer.antispam.length = length;
+                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:orange'>Antispam ${spammer.antispam.active ? 'ativado' : 'desativado'} com comprimento ${length}</span><br/>` } });
+            } else {
+                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Uso correto: $spammer antispam [tamanho]</span><br/>` } });
+            }
+            break;
+        
+        default:
+            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Comando $spammer inválido!</span><br/>` } });
+    }
+}
 
 let ClickTextDetect = false;
 let textFromFile = '';
@@ -137,6 +230,7 @@ function findNearestEntity(bot, onlyplayer) {
                 continue;
             }
         }
+
         if(entity.type === 'player')
         {
             if(botsConectado.includes(entity.username))
@@ -145,7 +239,6 @@ function findNearestEntity(bot, onlyplayer) {
             }
         }
         
-
         if (entity.position) {
             try {
                 const distance = calculateDistance(bot.entity.position, entity.position);
@@ -182,7 +275,6 @@ function processClickEvent(bot, message) {
 }
 
 async function minerar(bot, blockType) {
-    // Verifica se a mineração foi interrompida antes de começar
     if (!miningState[bot.username]) {
         return;
     }
@@ -209,20 +301,19 @@ async function minerar(bot, blockType) {
 
     const miningPromise = bot.collectBlock.collect(block);
 
-    // Verifica continuamente se o estado mudou para interromper a mineração
     const checkInterval = setInterval(() => {
         if (!miningState[bot.username]) {
-            bot.pathfinder.setGoal(null);  // Interrompe o pathfinding
-            clearInterval(checkInterval);  // Limpa o intervalo de verificação
+            bot.pathfinder.setGoal(null);
+            clearInterval(checkInterval);
         }
-    }, 100); // Verifica a cada 100ms
+    }, 100);
 
     try {
         await miningPromise;
-        clearInterval(checkInterval); // Limpa o intervalo ao finalizar a mineração
+        clearInterval(checkInterval);
         if (miningState[bot.username]) {
             process.send({ type: 'log', data: 'Minerado um bloco de ' + blockType + '.'});
-            minerar(bot, blockType);  // Continua minerando o próximo bloco
+            minerar(bot, blockType);
         }
     } catch (err) {
         process.send({ type: 'error', data: JSON.stringify(err)});
@@ -239,12 +330,10 @@ async function minerar2(bot, x1, y1, z1, x2, y2, z2) {
         return;
     }
 
-    // Garante que x1 <= x2, y1 <= y2, z1 <= z2
     [x1, x2] = [Math.min(x1, x2), Math.max(x1, x2)];
     [y1, y2] = [Math.min(y1, y2), Math.max(y1, y2)];
     [z1, z2] = [Math.min(z1, z2), Math.max(z1, z2)];
 
-    // Percorre todos os blocos na área especificada
     for (let x = x1; x <= x2; x++) {
         for (let y = y1; y <= y2; y++) {
             for (let z = z1; z <= z2; z++) {
@@ -264,7 +353,6 @@ async function minerar2(bot, x1, y1, z1, x2, y2, z2) {
 }
 
 async function minerarBloco(bot, block) {
-    // Configura o pathfinder
     const mcData = require('minecraft-data')(bot.version);
     const defaultMove = new Movements(bot, mcData);
     defaultMove.allowParkour = globalParkourMode;
@@ -275,10 +363,8 @@ async function minerarBloco(bot, block) {
 
     bot.pathfinder.setMovements(defaultMove);
 
-    // Define o objetivo como uma posição próxima ao bloco
     const goal = new goals.GoalNear(block.position.x, block.position.y, block.position.z, 3);
 
-    // Move até o bloco
     try {
         await bot.pathfinder.goto(goal);
     } catch (error) {
@@ -286,7 +372,6 @@ async function minerarBloco(bot, block) {
         return;
     }
 
-    // Minera o bloco
     try {
         await bot.tool.equipForBlock(block, {});
         await bot.dig(block);
@@ -296,13 +381,11 @@ async function minerarBloco(bot, block) {
     }
 }
 
-// Função para iniciar a mineração
 function iniciarMineracao(bot, x1, y1, z1, x2, y2, z2) {
     miningState[bot.username] = true;
     minerar2(bot, x1, y1, z1, x2, y2, z2);
 }
 
-// Função para parar a mineração
 function pararMineracao(bot) {
     miningState[bot.username] = false;
 }
@@ -416,7 +499,6 @@ function processMessage(message) {
 }
 
 function processTranslate(message) {
-    // Process translation key
     let template = message.translate || '';
     let parts = [];
 
@@ -431,18 +513,14 @@ function processTranslate(message) {
         });
     }
 
-    // Replace placeholders with actual parts
     let result = template.replace(/%s/g, () => parts.shift() || '');
 
-    // If there's no template, just join the parts
     if (!template && parts.length > 0) {
         result = parts.join(' ');
     }
 
-    // Handle color if present
     let color = message.color ? `color: ${minecraftColorToHtml(message.color)};` : '';
 
-    // Wrap the result in a span for styling
     return `<span class="minecraft-message" style="${color}">${result}</span>`;
 }
 
@@ -707,16 +785,14 @@ function addBlockToChunk(chunk, blockType, position) {
         return;
     }
 
-    // Verifique a estrutura esperada pelo método setBlock
     const newBlock = {
         type: blockType,
-        metadata: 0,  // Ajuste conforme necessário
-        light: 15,    // Ajuste conforme necessário
-        skyLight: 15, // Ajuste conforme necessário
+        metadata: 0,
+        light: 15,
+        skyLight: 15,
     };
 
     try {
-        // Aqui, assumimos que setBlock aceita (x, y, z, block)
         chunk.setBlock(position.x, position.y, position.z, newBlock);
     } catch (error) {
         process.send({ type: 'error', data: 'Error while setting block in chunk: ' + error});
@@ -1197,49 +1273,46 @@ process.on('message', async (process_msg_) => {
 
         bot.commandChecks = {}; // por que sim!
 
-        bot.on('spawn', async () => {
-            bot.loadPlugin(pathfinder);
-            bot.loadPlugin(collectBlock);
-            bot.loadPlugin(toolPlugin);
+        bot.loadPlugin(pathfinder);
+        bot.loadPlugin(collectBlock);
+        bot.loadPlugin(toolPlugin);
 
-            const pluginDir = path.resolve(__dirname, './pluginsUBBOT');
-    
-            fs.access(pluginDir, fs.constants.F_OK, async (err) => {
+        const pluginDir = path.resolve(__dirname, './pluginsUBBOT');
+
+        fs.access(pluginDir, fs.constants.F_OK, async (err) => {
+            if (err) {
+                process.send({ type: 'error', data: 'Diretório ' + pluginDir + ' não existe.'});
+                return;
+            }
+
+            fs.readdir(pluginDir, async (err, files) => {
                 if (err) {
-                    process.send({ type: 'error', data: 'Diretório ' + pluginDir + ' não existe.'});
+                    process.send({ type: 'error', data: 'Não foi possível ler o diretório de plugins: ' + err});
                     return;
                 }
-    
-                fs.readdir(pluginDir, async (err, files) => {
-                    if (err) {
-                        process.send({ type: 'error', data: 'Não foi possível ler o diretório de plugins: ' + err});
-                        return;
-                    }
-    
-                    if (files.length === 0) {
-                        process.send({ type: 'log', data: 'Nenhum plugin para carregar.' });
-                        return;
-                    }
-    
-                    for (let file of files) {
-                        if (path.extname(file) === '.js') {
-                            process.send({ type: 'log', data: 'Carregando plugin: ' + file});
-                            try {
-                                const pluginPath = path.resolve(pluginDir, file);
-                                const pluginUrl = url.pathToFileURL(pluginPath);
-                                const plugin = await import(pluginUrl);
-                                bot.loadPlugin(plugin.default);
-                            } catch (err) {
-                                process.send({ type: 'error', data: 'Erro ao carregar o plugin: ' + file + ': ' + err});
-                            }
+
+                if (files.length === 0) {
+                    process.send({ type: 'log', data: 'Nenhum plugin para carregar.' });
+                    return;
+                }
+
+                for (let file of files) {
+                    if (path.extname(file) === '.js') {
+                        process.send({ type: 'log', data: 'Carregando plugin: ' + file});
+                        try {
+                            const pluginPath = path.resolve(pluginDir, file);
+                            const pluginUrl = url.pathToFileURL(pluginPath);
+                            const plugin = await import(pluginUrl);
+                            bot.loadPlugin(plugin.default);
+                        } catch (err) {
+                            process.send({ type: 'error', data: 'Erro ao carregar o plugin: ' + file + ': ' + err});
                         }
                     }
-                });
+                }
             });
         });
 
         bot.on('connect', async () => {
-            // Inicialize o estado para o bot atual
             botTimers[username] = { isConnecting: true };
 
             process.send({ type: 'webcontents', event: 'bot-connecting', data: username });
@@ -1247,19 +1320,18 @@ process.on('message', async (process_msg_) => {
 
             process.send({ type: 'log', data: `connecting para ${username}` });
 
-            // Inicie o timer de 10 segundos para o bot atual
             botTimers[username].timer = setTimeout(() => {
                 if (botTimers[username] && botTimers[username].isConnecting) {
                     process.send({ type: 'webcontents', event: 'update-bot-status', data: { bot: username, status: 'disconnected' } });
                     process.send({ type: 'log', data: `status desconectado após timeout para ${username}` });
-                    delete botTimers[username]; // Limpar o estado do bot após o timeout
+                    delete botTimers[username];
                 }
             }, 20000); // 20 segundos
         });
 
         bot.on('login', () => {
             if (botTimers[username] && botTimers[username].isConnecting) {
-                clearTimeout(botTimers[username].timer); // Limpar o timer se a conexão for bem-sucedida
+                clearTimeout(botTimers[username].timer);
                 botTimers[username].isConnecting = false;
         
                 if (!botsConectado.includes(username)) {
@@ -1279,7 +1351,7 @@ process.on('message', async (process_msg_) => {
             }
         });
 
-        bot.on('blockUpdate', (oldBlock, newBlock) => { // for pathfinding
+        bot.on('blockUpdate', (oldBlock, newBlock) => {
             if (newBlock && !oldBlock) {
                 placedBlocks.add(newBlock.position.toString());
             }
@@ -1371,6 +1443,11 @@ process.on('message', async (process_msg_) => {
                 clearInterval(followInterval[username]);
                 isFollowing[username] = false;
             }
+
+            if (botSpammers[bot.username]) {
+                botSpammers[bot.username].active = false;
+                delete botSpammers[bot.username];
+            }
         
             if (autoreconnect) {
                 process.send({ type: 'log', data: 'auto reconect ativado - esperando 50ms' });
@@ -1383,7 +1460,6 @@ process.on('message', async (process_msg_) => {
                 }
             }
         
-            // Limpar o estado e o timer do bot
             if (botTimers[username]) {
                 clearTimeout(botTimers[username].timer);
                 delete botTimers[username];
@@ -1424,14 +1500,12 @@ process.on('message', async (process_msg_) => {
         bot.on('kicked', (reason) => {
             let reasonObj;
         
-            // Decodificação da razão do kick
             try {
                 reasonObj = JSON.parse(reason);
             } catch (e) {
                 reasonObj = reason;
             }
         
-            // Registro do objeto razão para debug
             process.send({ type: 'log', data: 'bot_on_kicked_reason_obj: ' + JSON.stringify(reasonObj)});
         
             let htmlMessage = '';
@@ -1466,7 +1540,6 @@ process.on('message', async (process_msg_) => {
                 });
             });
         
-            // Fallback para mensagens simples ou não identificadas
             if (messages.length === 0) {
                 let message = processMinecraftCodes(typeof reasonObj === 'string' ? reasonObj : JSON.stringify(reasonObj));
                 htmlMessage += `<br/><p>${message}</p>`;
@@ -1661,6 +1734,10 @@ process.on('message', async (process_msg_) => {
                             await minerar(bot, blockId);
                         })();
                     }
+                    else if (message.toLowerCase().startsWith('$spammer')) {
+                        const args = message.split(' ');
+                        handleSpammerCommand(bot, args);
+                    }
                     else if (message.toLowerCase().startsWith("$miner2 ")) {
                         const args = message.split(' ');
                         const command = args[1].toLowerCase();
@@ -1693,47 +1770,57 @@ process.on('message', async (process_msg_) => {
                                 }
                         }
                     }
-                    else if (message.toLowerCase().startsWith("$killaura.timems=")) {
-                        killAuraDelay = parseInt(message.split('=')[1]);
-
-                        if (killAuraDelay <= 0) {
-                            killAuraDelay = 1
-                        }
-
-                        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Delay do KillAura definido para ${killAuraDelay}ms</span><br/>` } })
-                    }
-                    else if (message.toLowerCase().startsWith("$killaura.distance=")) {
-                        DistanceReach = parseInt(message.split('=')[1]);
-
-                        if (DistanceReach <= 0 || DistanceReach > 6 || isNaN(DistanceReach)) {
-                            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Valor invalido! Distancia setada para 3m</span><br/>` } })
-                            DistanceReach = 3
-                        }
-                        else {
-                            process.send({ type: 'log', data: DistanceReach});
-                            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Distancia do KillAura definida para ${DistanceReach}m</span><br/>` } })
-                        }
-                    }
-                    else if (message.toLowerCase() == "$killaura") {
-                        killAuraActive[bot.username] = !killAuraActive[bot.username]
-                    
-                        if (killAuraActive[bot.username]) {
-                            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>KillAura ativado</span><br/>" } })
-                            attackInterval[bot.username] = setInterval(() => {
-                                const nearestEntity = findNearestEntity(bot, true);
-                                if (nearestEntity) {
-                                    const distance = distanceTo(bot.entity.position, nearestEntity.position);
-
-                                    if (distance < DistanceReach) {
-                                        bot.lookAt(nearestEntity.position.offset(0, nearestEntity.height, 0));
-                                        bot.attack(nearestEntity, true);
+                    else if (message.toLowerCase().startsWith("$killaura")) {
+                        const args = message.split(' ');
+                        
+                        if (args.length === 1) {
+                            // Ativa ou desativa o KillAura
+                            killAuraActive[bot.username] = !killAuraActive[bot.username];
+                            
+                            if (killAuraActive[bot.username]) {
+                                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:green'>KillAura ativado</span><br/>" } });
+                                attackInterval[bot.username] = setInterval(() => {
+                                    const nearestEntity = findNearestEntity(bot, true);
+                                    if (nearestEntity) {
+                                        const distance = distanceTo(bot.entity.position, nearestEntity.position);
+                                        if (distance < DistanceReach) {
+                                            bot.lookAt(nearestEntity.position.offset(0, nearestEntity.height, 0));
+                                            bot.attack(nearestEntity, true);
+                                        }
                                     }
-                                }
-
-                            }, killAuraDelay);
+                                }, killAuraDelay);
+                            } else {
+                                process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:red'>KillAura desativado</span><br/>" } });
+                                clearInterval(attackInterval[bot.username]);
+                            }
+                        } else if (args.length === 3) {
+                            const command = args[1].toLowerCase();
+                            
+                            switch (command) {
+                                case 'timems':
+                                    killAuraDelay = parseInt(args[2]);
+                                    if (killAuraDelay <= 0) {
+                                        killAuraDelay = 1;
+                                    }
+                                    process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Delay do KillAura definido para ${killAuraDelay}ms</span><br/>` } });
+                                    break;
+                    
+                                case 'distance':
+                                    DistanceReach = parseInt(args[2]);
+                                    if (DistanceReach <= 0 || DistanceReach > 6 || isNaN(DistanceReach)) {
+                                        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Valor inválido! Distância setada para 3m</span><br/>` } });
+                                        DistanceReach = 3;
+                                    } else {
+                                        process.send({ type: 'log', data: DistanceReach});
+                                        process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:green'>Distância do KillAura definida para ${DistanceReach}m</span><br/>` } });
+                                    }
+                                    break;
+                    
+                                default:
+                                    process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Comando inválido. Use $killaura, $killaura timems [valor], ou $killaura distance [valor]</span><br/>` } });
+                            }
                         } else {
-                            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: "<br/><span style='color:red'>KillAura desativado</span><br/>" } })
-                            clearInterval(attackInterval[bot.username]);
+                            process.send({ type: 'webcontents', event: 'bot-message', data: { bot: bot.username, message: `<br/><span style='color:red'>Comando inválido. Use $killaura, $killaura timems [valor], ou $killaura distance [valor]</span><br/>` } });
                         }
                     }
                     else if (message.toLowerCase().startsWith("$goto ")) {
@@ -1826,8 +1913,8 @@ process.on('message', async (process_msg_) => {
                             const mcData = require('minecraft-data')(bot.version);
                             const defaultMove = new Movements(bot, mcData);
 
-                            defaultMove.allowParkour = true;   // Permite o bot a pular automaticamente quando necessário (parkour)
-                            defaultMove.canJump = true;        // Permite o bot a pular
+                            defaultMove.allowParkour = true;
+                            defaultMove.canJump = true;
 
                             bot.pathfinder.setMovements(defaultMove);
 

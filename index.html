@@ -10,7 +10,7 @@
 <body>
   <div class="left">
     <h1>UnknownBot Reworked Version v3.3</h1>
-    <form id="connect-form">
+    <form id="connect-form">      
       <label for="host">Host:</label>
       <br>
       <input type="text" id="host" value="localhost" name="host">
@@ -113,6 +113,10 @@
       <input type="submit" value="Connect">
     </form>
   </div>
+  <div class="aligned-item">
+    <input type="checkbox" id="backgroundToggle" class="round-checkbox">
+    <label for="backgroundToggle">Custom Background</label>
+  </div>
   <div class="right">
     <div id="all-bots">
       <h2>All Bots</h2>
@@ -160,6 +164,18 @@
         });
       });
     }
+
+    document.getElementById('backgroundToggle').addEventListener('change', function() {
+      if (this.checked) {
+        // Defina o caminho completo para a imagem no diretório especificado
+        document.body.style.backgroundImage = "url('./assetsUBBOT/custom_background.jpg')";
+        document.body.style.backgroundSize = "cover";  // Ajuste para cobrir todo o fundo
+        document.body.style.backgroundRepeat = "no-repeat";  // Evite repetição da imagem
+        document.body.style.backgroundPosition = "center";  // Centralize a imagem
+      } else {
+        document.body.style.backgroundImage = "none";  // Remove o plano de fundo
+      }
+    });
 
     const divBots = document.getElementById('bots');
     const divContagemBots = document.createElement('div');

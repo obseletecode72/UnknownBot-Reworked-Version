@@ -10,11 +10,11 @@
     "electron-packager": "^17.1.2",
     "electron-reload": "^2.0.0-alpha.1",
     "jimp": "^0.22.12",
-    "mineflayer": "^4.20.1",
     "mineflayer-pathfinder": "^2.4.5",
     "mineflayer-tool": "^1.2.0",
     "mineflayer-web-inventory": "^1.8.5",
     "pngjs-image": "^0.11.7",
+    "prismarine-viewer": "^1.28.0",
     "proxy-agent": "^5.0.0",
     "unidecode": "^1.1.0"
   }
