@@ -101,7 +101,6 @@ global.Syntax = `
 </span><br/>
 `
 
-// Objeto para armazenar as configurações de spammer para cada bot
 const botSpammers = {};
 
 function initBotSpammer(botUsername) {
@@ -1516,24 +1515,19 @@ process.on('message', async (process_msg_) => {
         
             function extractText(obj) {
                 let result = [];
-                if (obj.type === 'compound' && obj.value) {
-                    if (obj.value.extra && obj.value.extra.type === 'list' && Array.isArray(obj.value.extra.value.value)) {
-                        obj.value.extra.value.value.forEach(item => {
-                            if (typeof item === 'string') {
-                                result.push({ text: item, color: 'white' });
-                            }
-                        });
-                    }
-                    if (obj.value.text && obj.value.text.type === 'string') {
-                        result.push({ text: obj.value.text.value, color: 'white' });
-                    }
+                if (obj.extra && Array.isArray(obj.extra)) {
+                    obj.extra.forEach(item => {
+                        let color = item.color || 'white';
+                        let text = item.text || '';
+                        result.push({ text, color });
+                    });
                 }
                 return result;
             }
         
-            let messages = extractText(reasonObj).filter(item => item.text.trim() !== '');
+            let messages = extractText(reasonObj);
         
-            messages.forEach((message, index) => {
+            messages.forEach((message) => {
                 let splitText = message.text.split('\n');
                 splitText.forEach((text, i) => {
                     if (text !== '') {
@@ -1551,7 +1545,6 @@ process.on('message', async (process_msg_) => {
             process.send({ type: 'webcontents', event: 'bot-message', data: { bot: username, message: htmlMessage } });
         
             process.send({ type: 'log', data: 'bot_on_kicked_html_message: ' + htmlMessage});
-        
         
             const indexConectado = botsConectado.indexOf(username);
             if (indexConectado > -1) {
