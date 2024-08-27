@@ -58,5 +58,7 @@ Para compilar o UnknownBot em .exe voce pode seguir estes passos abaixo, ou baix
 
 1- Abra o arquivo "converter_para_exe.bat" isso ira compilar em .exe em uma pasta
 
+OBS: caso voce compile ira ter que extrair as pastas do rar node_modules para a pasta node_modules que se encontra dentro das pastas resources e etc... caso contrario ira dar erro
+
 OBS: Quando o programa e compilado em .exe, ele sai do "Modo" Desenvolvimento para o "Modo" Release, deste jeito, as pastas plugins/assets/config etc... elas so estao disponiveis em, '/resources/app/' la voce podera encontrar as pastas e arquivos, portanto e la que voce vai querer modificar se voce quiser tirar algum plugin ou colocar/modificar etc...
 
