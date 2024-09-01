@@ -9,7 +9,7 @@
 
 <body>
   <div class="left">
-    <h1>UnknownBot Reworked Version v3.3</h1>
+    <h1>UnknownBot Reworked Version v3.4</h1>
     <form id="connect-form">      
       <label for="host">Host:</label>
       <br>
@@ -94,7 +94,7 @@
       <div class="aligned-item">
         <input type="checkbox" id="autoReconnect" name="autoReconnect" class="round-checkbox" onchange="sendDataReconnect()">
         <label for="autoReconnect">Auto Reconnect</label>
-      </div>
+      </div>      
       <div class="aligned-item">
         <input type="checkbox" id="fallCheck" name="fallCheck" class="round-checkbox" onchange="sendFallCheck()">
         <label for="fallCheck">Fall Check Bypass</label>
@@ -102,7 +102,7 @@
       <div class="aligned-item" id="delayDiv" style="display: none;">
         <label for="delay" class="delay-label">Delay(MS):</label>
         <input type="number" id="delay" name="delay" class="delay-input" min="0" max="10000" value="0"
-          onchange="sendData()" oninput="validateInput(this)">
+          onchange="sendDataReconnect()" oninput="validateInput(this)">
       </div>
       <br>
       <br>
@@ -182,12 +182,6 @@
     divContagemBots.id = 'contagem-bots';
     divBots.insertBefore(divContagemBots, divBots.firstChild);
 
-    let botsConectadosHTML = [];
-
-    ipcRenderer.on('botsarraytohtml', (event, botsaarray) => {
-      botsConectadosHTML = botsaarray;
-    })
-
     function sendDataReconnect() {
       const autoReconnect = document.getElementById('autoReconnect').checked;
       let delay = document.getElementById('delay').value || 0;
@@ -226,6 +220,7 @@
         delayDiv.style.display = "none";
       }
     }
+
     let botMessages = {}
     let botVersions = {}
     let botUsernames = {}
@@ -379,7 +374,15 @@
 
     async function reconnectAllButton(botNames, host, delay) {
       for (const botUsername of botNames) {
-        ipcRenderer.send('reco-bot', host, botUsername, botVersions[botUsername], botProxies[botUsername], botProxyTypes[botUsername]);
+        // Envia todos os dados como um único objeto
+        ipcRenderer.send('reco-bot', {
+          host,
+          botUsername,
+          botVersion: botVersions[botUsername],
+          botProxy: botProxies[botUsername],
+          botProxyType: botProxyTypes[botUsername]
+        });
+
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -525,9 +528,7 @@
         if (message == "$inventoryinterface") {
           ipcRenderer.send('send-message-all', { message: "<br><span style='color:red'>Comando nao suportado neste canal!</span><br><br>" });
         } else {
-          for (const botUsername of botsConectadosHTML) {
-            ipcRenderer.send('send-message', { botUsername, message });
-          }
+          ipcRenderer.send('send-message-for-all-threads', { message });
         }
         event.target.value = '';
       }
@@ -545,9 +546,6 @@
           }
         } else if (event.target.id === 'input-all') {
           ipcRenderer.send('ready-for-bots');
-          botsConectadosHTML.forEach(botUsername => {
-            ipcRenderer.send('send-message', { botUsername, message });
-          });
         }
         event.target.value = '';
       } else if (event.ctrlKey && event.shiftKey) {
