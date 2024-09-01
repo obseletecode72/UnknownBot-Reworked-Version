@@ -1,4 +1,4 @@
-#                 UnknownBot - Versão Reworked v3.3
+#                 UnknownBot - Versão Reworked v3.4
 
 <p align="center">
   <img src="https://avatars.githubusercontent.com/u/138137862?s=400&u=d3046ac7d6c15bebfe304e914789a2b631ab6186&v=4" />
